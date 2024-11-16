@@ -272,7 +272,7 @@ FNavigationReply UUINavInputBox::NativeOnNavigation(const FGeometry& MyGeometry,
 		return Reply;
 	}
 
-	if (InputButton->ForcedStyle == EButtonStyle::Hovered)
+	if (InputButton->ForcedStylePair.Key == EButtonStyle::Hovered)
 	{
 		return FNavigationReply::Explicit(TargetInputBox->InputButton->TakeWidget());
 	}

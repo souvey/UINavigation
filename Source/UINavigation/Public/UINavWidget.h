@@ -123,6 +123,10 @@ protected:
 	void BeginSelectorMovement(UUINavComponent* FromComponent, UUINavComponent* ToComponent);
 	void HandleSelectorMovement(const float DeltaTime);
 
+	FVector2D GetSelectorLocationOffset(const bool bAbsolute = true);
+	FVector2D GetSelectorLocation(const bool bAbsolute = true);
+	void SetSelectorLocation(const FVector2D& NewLocation, const bool bAbsolute = true);
+
 	UFUNCTION(BlueprintCallable, Category = UINavWidget)
 	void GoToNextSection();
 	UFUNCTION(BlueprintCallable, Category = UINavWidget)
@@ -220,6 +224,17 @@ public:
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = UINavWidget)
 	bool bClearNavigationStateWhenChild = true;
+
+	//If set to true, this widget will go from the first section to the last and vice-versa when using auto section switching.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = UINavWidget)
+	bool bWrapAutoSectionNavigation = true;
+
+	/*
+	* Input Context to be used to replace the default one. for each platform, in this specific widget (assuming a child widget doesn't override that)
+	* The Map's Key (String) should be the name of the platform you want to override. Leave blank if this applies to all platforms.
+	*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = UINavWidget)
+	TMap<FString, TObjectPtr<UInputMappingContext>> UINavInputContextOverrides;
 
 	/*
 	* Input Contexts to be applied when this widget becomes active (and to be removed when it becomes inactive)
@@ -523,6 +538,16 @@ public:
 	virtual void OnInputChanged_Implementation(const EInputType From, const EInputType To);
 
 	void PropagateOnInputChanged(const EInputType From, const EInputType To);
+
+	/**
+	*	Called when the gamepad's thumbstick moves
+	*/
+	UFUNCTION(BlueprintNativeEvent, Category = UINavController)
+	void OnThumbstickCursorInput(const FVector2D& ThumbstickDelta);
+
+	virtual void OnThumbstickCursorInput_Implementation(const FVector2D& ThumbstickDelta);
+
+	void PropagateOnThumbstickCursorInput(const FVector2D& ThumbstickDelta);
 
 	/**
 	*	Called before this widget is setup for UINav logic
