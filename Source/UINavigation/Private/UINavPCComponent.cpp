@@ -8,6 +8,7 @@
 #include "UINavInputContainer.h"
 #include "UINavMacros.h"
 #include "UINavInputBox.h"
+#include "UINavInputDisplay.h"
 #include "UINavigationConfig.h"
 #include "SwapKeysWidget.h"
 #include "Components/ScrollBox.h"
@@ -17,6 +18,7 @@
 #include "Data/InputNameMapping.h"
 #include "Data/PlatformConfigData.h"
 #include "UINavBlueprintFunctionLibrary.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "UINavInputProcessor.h"
 #include "GenericPlatform/GenericPlatformInputDeviceMapper.h"
 #include "Framework/Application/SlateApplication.h"
@@ -34,6 +36,8 @@
 #include "Engine/Texture2D.h"
 #include "UObject/SoftObjectPtr.h"
 #include "Internationalization/Internationalization.h"
+#include "UINavLocalPlayerSubsystem.h"
+#include "UINavGameViewportClient.h"
 #include "Curves/CurveFloat.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
@@ -104,6 +108,11 @@ void UUINavPCComponent::Activate(bool bReset)
 void UUINavPCComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (PC == nullptr)
+	{
+		return;
+	}
 
 	if (!PC->IsLocalController())
 	{
@@ -662,6 +671,18 @@ void UUINavPCComponent::SetShowMouseCursor(const bool bShowMouse)
 	float MousePosY;
 	PC->GetMousePosition(MousePosX, MousePosY);
 	PC->SetMouseLocation(static_cast<int>(MousePosX), static_cast<int>(MousePosY));
+
+#if WITH_EDITOR
+	const UWorld* const World = PC->GetWorld();
+	if (IsValid(World))
+	{
+		const UGameViewportClient* const GameViewportClient = World->GetGameViewport();
+		if (IsValid(GameViewportClient) && !GameViewportClient->IsA<UUINavGameViewportClient>())
+		{
+			DISPLAYERROR(TEXT("GameViewportClient isn't a UINavGameViewportClient, so hiding the mouse cursor won't function properly! Please update the GameViewportClient class in Project Settings."));
+		}
+	}
+#endif //WITH_EDITOR
 }
 
 bool UUINavPCComponent::HidingMouseCursor() const
@@ -725,6 +746,44 @@ void UUINavPCComponent::SetAllowSectionInput(const bool bAllowInput)
 {
 	bAllowSectionInput = bAllowInput;
 	RefreshNavigationKeys();
+}
+
+void UUINavPCComponent::SetGamepadInputDataTables(UDataTable* NewKeyIconTable, UDataTable* NewKeyNameTable, const bool bUpdateInputDisplays /*= true*/)
+{
+	CurrentPlatformData.GamepadKeyIconData = NewKeyIconTable;
+	CurrentPlatformData.GamepadKeyNameData = NewKeyNameTable;
+
+	if (bUpdateInputDisplays && CurrentInputType == EInputType::Gamepad)
+	{
+		ForceUpdateAllInputDisplays();
+	}
+}
+
+void UUINavPCComponent::SetKeyboardInputDataTables(UDataTable* NewKeyIconTable, UDataTable* NewKeyNameTable, const bool bUpdateInputDisplays /*= true*/)
+{
+	KeyboardMouseKeyIconData = NewKeyIconTable;
+	KeyboardMouseKeyNameData = NewKeyNameTable;
+
+	if (bUpdateInputDisplays && CurrentInputType != EInputType::Gamepad)
+	{
+		ForceUpdateAllInputDisplays();
+	}
+}
+
+void UUINavPCComponent::ForceUpdateAllInputDisplays(const bool bOnlyTopLevel /*= false*/)
+{
+	TArray<UUserWidget*> Widgets;
+	UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, Widgets, UUINavInputDisplay::StaticClass(), /*bTopLevel*/ bOnlyTopLevel);
+	for (UUserWidget* Widget : Widgets)
+	{
+		UUINavInputDisplay* InputDisplay = Cast<UUINavInputDisplay>(Widget);
+		if (!IsValid(InputDisplay))
+		{
+			continue;
+		}
+
+		InputDisplay->UpdateInputVisuals();
+	}
 }
 
 void UUINavPCComponent::HandleKeyDownEvent(FSlateApplication& SlateApp, const FKeyEvent& InKeyEvent)

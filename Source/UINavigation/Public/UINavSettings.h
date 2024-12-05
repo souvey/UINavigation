@@ -41,6 +41,14 @@ public:
 	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "Settings")
 	bool bConsumeNavigationInputs = false;
 	
+	// Whether navigation is allowed while pressing a button
+	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "Settings")
+	bool bAllowNavigationWhilePressing = false;
+
+	// Whether a UINavComponent that's released should gain focus at that moment
+	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "Settings")
+	bool bSetFocusOnRelease = true;
+
 	// Whether focus navigation should stop when using Next/Previous input
 	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "Settings")
 	bool bStopNextPreviousNavigation = true;
@@ -80,6 +88,17 @@ public:
 	// The amount of analog movement that will trigger the input type being changed to gamepad
 	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "Settings")
 	float AnalogInputChangeThreshold = 0.1f;
+
+	// The list of widget types (Slate names) to allow to be focused
+	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "Settings")
+	TArray<FString> AllowedWidgetTypesToFocus = {
+		TEXT("SObjectWidget"),
+		TEXT("SButton"),
+		TEXT("SUINavButton"),
+		TEXT("SSpinBox"),
+		TEXT("SEditableText"),
+		TEXT("SMultilineEditableText")
+	};
 
 	// Increment by 1 everytime your project's default inputs change
 	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "Settings")

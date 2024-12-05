@@ -32,16 +32,8 @@
 #include "Components/WidgetSwitcher.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/ViewportSplitScreen.h"
+#include "Engine/Console.h"
 #include "Curves/CurveFloat.h"
-
-const TArray<FString> UUINavWidget::AllowedObjectTypesToFocus = {
-		TEXT("SObjectWidget"),
-		TEXT("SButton"),
-		TEXT("SUINavButton"),
-		TEXT("SSpinBox"),
-		TEXT("SEditableText"),
-		TEXT("SMultilineEditableText")
-};
 
 UUINavWidget::UUINavWidget(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
@@ -228,20 +220,15 @@ void UUINavWidget::SetupSections()
 		return;
 	}
 
-	if (!IsValid(UINavSectionsPanel))
-	{
-		return;
-	}
-
 	UUINavSectionsWidget* SectionsWidget = Cast<UUINavSectionsWidget>(UINavSectionsPanel);
-	UPanelWidget* SectionsPanel = IsValid(SectionsWidget) ? SectionsWidget->SectionButtonsPanel : Cast<UPanelWidget>(UINavSectionsPanel);
-	if (!IsValid(SectionsPanel))
+	UPanelWidget* TargetSectionsPanel = IsValid(SectionsWidget) ? SectionsWidget->SectionButtonsPanel : Cast<UPanelWidget>(UINavSectionsPanel);
+	if (IsValid(UINavSectionsPanel) && !IsValid(TargetSectionsPanel))
 	{
 		DISPLAYERROR("UINavSectionsPanel isn't a PanelWidget child or UINavSectionsWidget!");
 		return;
 	}
 
-	if (SectionButtons.IsEmpty())
+	if (SectionButtons.IsEmpty() && IsValid(TargetSectionsPanel))
 	{
 #if WITH_EDITOR
 		static const TArray<TSubclassOf<UWidget>> ButtonClassArray = { UButton::StaticClass(), UUINavSectionButton::StaticClass(), UUINavComponent::StaticClass() };
@@ -249,7 +236,7 @@ void UUINavWidget::SetupSections()
 		static const TArray<TSubclassOf<UWidget>> ButtonClassArray = { UButton::StaticClass(), UUINavSectionButton::StaticClass() };
 #endif
 
-		for (UWidget* const ChildWidget : SectionsPanel->GetAllChildren())
+		for (UWidget* const ChildWidget : TargetSectionsPanel->GetAllChildren())
 		{
 			UWidget* TargetWidget = UUINavBlueprintFunctionLibrary::FindWidgetOfClassesInWidget(ChildWidget, ButtonClassArray);
 
@@ -287,10 +274,10 @@ void UUINavWidget::SetupSections()
 		{
 		case 0:
 			SectionButtons[i]->OnClicked.AddUniqueDynamic(this, &UUINavWidget::OnSectionButtonPressed1);
-				break;
+			break;
 		case 1:
 			SectionButtons[i]->OnClicked.AddUniqueDynamic(this, &UUINavWidget::OnSectionButtonPressed2);
-				break;
+			break;
 		case 2:
 			SectionButtons[i]->OnClicked.AddUniqueDynamic(this, &UUINavWidget::OnSectionButtonPressed3);
 			break;
@@ -656,12 +643,14 @@ FNavigationReply UUINavWidget::NativeOnNavigation(const FGeometry& MyGeometry, c
 
 void UUINavWidget::HandleOnFocusChanging(UUINavWidget* Widget, UUINavComponent* Component, const FWeakWidgetPath& PreviousFocusPath, const FWidgetPath& NewWidgetPath, const FFocusEvent& InFocusEvent)
 {
+	const UUINavSettings* const UINavSettings = GetDefault<UUINavSettings>();
+
 	if (!NewWidgetPath.IsValid() ||
 		NewWidgetPath.Widgets.Num() == 0 ||
 		Widget->UINavPC->GetInputMode() == EInputMode::Game ||
 		(InFocusEvent.GetCause() == EFocusCause::Mouse &&
 			Widget->UINavPC->GetInputMode() == EInputMode::GameUI &&
-			GetDefault<UUINavSettings>()->bAllowFocusOnViewportInGameAndUI))
+			UINavSettings->bAllowFocusOnViewportInGameAndUI))
 	{
 		return;
 	}
@@ -681,9 +670,20 @@ void UUINavWidget::HandleOnFocusChanging(UUINavWidget* Widget, UUINavComponent* 
 	const bool LastWidgetIsButton = LastWidgetTypeStr == TEXT("SButton");
 	UUserWidget* ParentWidget = LastWidgetIsButton ? UUINavWidget::FindUserWidgetInWidgetPath(NewWidgetPath, NewWidgetPath.GetLastWidget()) : nullptr;
 	if (InFocusEvent.GetCause() == EFocusCause::WindowActivate ||
-		!UUINavWidget::AllowedObjectTypesToFocus.Contains(LastWidgetTypeStr) ||
+		!UINavSettings->AllowedWidgetTypesToFocus.Contains(LastWidgetTypeStr) ||
 		(LastWidgetIsButton && !IsValid(ParentWidget)))
 	{
+		if (const UWorld* const World = Widget->GetWorld())
+		{
+			if (const UGameViewportClient* const ViewportClient = World->GetGameViewport())
+			{
+				if (IsValid(ViewportClient->ViewportConsole) && ViewportClient->ViewportConsole->bCaptureKeyInput)
+				{
+					return;
+				}
+			}
+		}
+
 		if (IsValid(Component))
 		{
 			Component->NavButton->SetFocus();
@@ -1086,7 +1086,7 @@ FVector2D UUINavWidget::GetButtonLocation(UUINavComponent* Component) const
 
 	const FGeometry Geom = Component->NavButton->GetCachedGeometry();
 	const FVector2D LocalSize = Geom.GetLocalSize();
-	FVector2D LocalPosition;
+	FVector2D LocalPosition = FVector2D::ZeroVector;
 	switch (SelectorPositioning)
 	{
 		case ESelectorPosition::Position_Center:
@@ -1830,7 +1830,7 @@ bool UUINavWidget::TryConsumeNavigation()
 		return true;
 	}
 
-	return IsValid(SelectedComponent);
+	return IsValid(SelectedComponent) && !GetDefault<UUINavSettings>()->bAllowNavigationWhilePressing;
 }
 
 bool UUINavWidget::IsBeingRemoved() const
@@ -1927,7 +1927,13 @@ bool UUINavWidget::IsSelectorValid()
 
 void UUINavWidget::OnHoveredComponent(UUINavComponent* Component)
 {
-	if (!IsValid(Component) || UINavPC == nullptr || (UINavPC->HidingMouseCursor() && !UINavPC->OverrideConsiderHover())) return;
+	if (!IsValid(Component) || UINavPC == nullptr) return;
+
+	if (UINavPC->HidingMouseCursor() && !UINavPC->OverrideConsiderHover())
+	{
+		Component->SwitchButtonStyle(EButtonStyle::Normal);
+		return;
+	}
 
 	UINavPC->CancelRebind();
 
@@ -2035,5 +2041,5 @@ void UUINavWidget::OnReleasedComponent(UUINavComponent* Component)
 		}
 	}
 
-	if (Component != CurrentComponent) Component->SetFocus();
+	if (Component != CurrentComponent && GetDefault<UUINavSettings>()->bSetFocusOnRelease) Component->SetFocus();
 }
