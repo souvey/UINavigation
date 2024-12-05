@@ -36,7 +36,6 @@
 #include "Engine/Texture2D.h"
 #include "UObject/SoftObjectPtr.h"
 #include "Internationalization/Internationalization.h"
-#include "UINavLocalPlayerSubsystem.h"
 #include "UINavGameViewportClient.h"
 #include "Curves/CurveFloat.h"
 #include "Kismet/GameplayStatics.h"
