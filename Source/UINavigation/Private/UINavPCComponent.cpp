@@ -130,19 +130,26 @@ void UUINavPCComponent::BeginPlay()
 			const UUINavEnhancedInputActions* const InputActions = UINavSettings->EnhancedInputActions.LoadSynchronous();
 		
 			if (!IsValid(InputContext) ||
-				!IsValid(InputActions) ||
-				!IsValid(InputActions->IA_MenuUp) ||
-				!IsValid(InputActions->IA_MenuDown) ||
-				!IsValid(InputActions->IA_MenuLeft) ||
-				!IsValid(InputActions->IA_MenuRight) ||
-				!IsValid(InputActions->IA_MenuSelect) ||
-				!IsValid(InputActions->IA_MenuReturn) ||
-				!IsValid(InputActions->IA_MenuNext) ||
-				!IsValid(InputActions->IA_MenuPrevious))
+				!IsValid(InputActions))
 			{
+#if !WITH_EDITOR
 				DISPLAYERROR("Make sure '/UINavigation/Input' is added as an Additional Directory to Cook in your Project!");
-				DISPLAYERROR("Not all Enhanced Menu Inputs have been setup!");
+#endif //WITH_EDITOR
+				DISPLAYERROR("UINav Input Data assets weren't found!");
 				return;
+			}
+			else if (!IsValid(InputActions->IA_MenuUp) ||
+					!IsValid(InputActions->IA_MenuDown) ||
+					!IsValid(InputActions->IA_MenuLeft) ||
+					!IsValid(InputActions->IA_MenuRight) ||
+					!IsValid(InputActions->IA_MenuSelect) ||
+					!IsValid(InputActions->IA_MenuReturn) ||
+					!IsValid(InputActions->IA_MenuNext) ||
+					!IsValid(InputActions->IA_MenuPrevious))
+			{
+#if WITH_EDITOR
+				DISPLAYWARNING("Not all Enhanced Menu Inputs have been setup!");
+#endif //WITH_EDITOR
 			}
 		}
 		
@@ -193,25 +200,28 @@ void UUINavPCComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	switch (CountdownPhase)
+	if (bChainNavigation)
 	{
-		case ECountdownPhase::First:
-			TimerCounter += DeltaTime;
-			if (TimerCounter >= InputHeldWaitTime)
-			{
-				NavigateInDirection(CallbackDirection);
-				TimerCounter -= InputHeldWaitTime;
-				CountdownPhase = ECountdownPhase::Looping;
-			}
-			break;
-		case ECountdownPhase::Looping:
-			TimerCounter += DeltaTime;
-			if (TimerCounter >= NavigationChainFrequency)
-			{
-				NavigateInDirection(CallbackDirection);
-				TimerCounter -= NavigationChainFrequency;
-			}
-			break;
+		switch (CountdownPhase)
+		{
+			case ECountdownPhase::First:
+				TimerCounter += DeltaTime;
+				if (TimerCounter >= InputHeldWaitTime)
+				{
+					NavigateInDirection(CallbackDirection);
+					TimerCounter -= InputHeldWaitTime;
+					CountdownPhase = ECountdownPhase::Looping;
+				}
+				break;
+			case ECountdownPhase::Looping:
+				TimerCounter += DeltaTime;
+				if (TimerCounter >= NavigationChainFrequency)
+				{
+					NavigateInDirection(CallbackDirection);
+					TimerCounter -= NavigationChainFrequency;
+				}
+				break;
+		}
 	}
 
 	if (!bReceivedAnalogInput)
@@ -1371,7 +1381,7 @@ const FKey UUINavPCComponent::GetKeyFromAxis(const FKey& Key, const bool bPositi
 	return bPositive ? AxisKeys->PositiveKey : AxisKeys->NegativeKey;
 }
 
-const FKey UUINavPCComponent::GetAxisFromScaledKey(const FKey& Key, bool& OutbPositive) const
+const FKey UUINavPCComponent::GetAxisFromScaledKey(const FKey& Key, const bool bInclude1DAxis, bool& OutbPositive) const
 {
 	for (const TPair<FKey, FAxis2D_Keys>& AxisKeys : AxisToKeyMap)
 	{
@@ -1387,6 +1397,13 @@ const FKey UUINavPCComponent::GetAxisFromScaledKey(const FKey& Key, bool& OutbPo
 			return AxisKeys.Key;
 		}
 	}
+
+	if (bInclude1DAxis)
+	{
+		return GetAxisFromKey(Key);
+		OutbPositive = true;
+	}
+
 	return FKey();
 }
 
@@ -1671,7 +1688,7 @@ void UUINavPCComponent::NavigateInDirection(const EUINavigation InDirection, con
 {
 	AllowDirection = InDirection;
 
-	if (!IsValid(ActiveWidget) || !IsValid(ActiveWidget->GetCurrentComponent()))
+	if (!IsValid(ActiveWidget) || !IsValid(ActiveWidget->GetCurrentComponent()) || ActiveWidget->GetCurrentComponent()->GetCachedWidget() == nullptr)
 	{
 		return;
 	}
