@@ -13,6 +13,7 @@
 #include "SwapKeysWidget.h"
 #include "Components/ScrollBox.h"
 #include "GameFramework/InputSettings.h"
+#include "GameFramework/PlayerInput.h"
 #include "Data/AxisType.h"
 #include "Data/InputIconMapping.h"
 #include "Data/InputNameMapping.h"
@@ -23,6 +24,7 @@
 #include "GenericPlatform/GenericPlatformInputDeviceMapper.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Application/SlateUser.h"
+#include "TimerManager.h"
 #include "InputCoreTypes.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -64,8 +66,6 @@ UUINavPCComponent::UUINavPCComponent()
 		EKeys::AddKey(FKeyDetails(MouseRight, NSLOCTEXT("InputKeys", "MouseRight", "Mouse Right"), FKeyDetails::MouseButton));
 		EKeys::AddKey(FKeyDetails(MouseLeft, NSLOCTEXT("InputKeys", "MouseLeft", "Mouse Left"), FKeyDetails::MouseButton));
 	}
-
-	UINavInputContextRef = GetDefault<UUINavSettings>()->EnhancedInputContext.Get();
 
 	static ConstructorHelpers::FObjectFinderOptional<UCurveFloat> ThumbstickCursorCurveAsset(TEXT("/UINavigation/Data/ThumbstickMoveCurve.ThumbstickMoveCurve"));
 	if (IsValid(ThumbstickCursorCurveAsset.Get()))
@@ -779,6 +779,14 @@ void UUINavPCComponent::SetKeyboardInputDataTables(UDataTable* NewKeyIconTable, 
 	}
 }
 
+void UUINavPCComponent::InputKey(const FKey& Key, const EInputEvent Event, const float Delta)
+{
+	if (IsValid(PC))
+	{
+		PC->InputKey(FInputKeyParams(Key, Event, Delta));
+	}
+}
+
 void UUINavPCComponent::ForceUpdateAllInputDisplays(const bool bOnlyTopLevel /*= false*/)
 {
 	TArray<UUserWidget*> Widgets;
@@ -807,7 +815,7 @@ void UUINavPCComponent::HandleKeyDownEvent(FSlateApplication& SlateApp, const FK
 	LastPressedKeyUserIndex = InKeyEvent.GetUserIndex();
 	VerifyInputTypeChangeByKey(InKeyEvent, bShouldUnforceNavigation);
 
-	if (!bShouldUnforceNavigation)
+	if (!bShouldUnforceNavigation && IsValid(ActiveWidget))
 	{
 		bIgnoreMousePress = true;
 		SimulateMousePress();
@@ -834,6 +842,11 @@ void UUINavPCComponent::HandleKeyUpEvent(FSlateApplication& SlateApp, const FKey
 
 void UUINavPCComponent::HandleAnalogInputEvent(FSlateApplication& SlateApp, const FAnalogInputEvent& InAnalogInputEvent)
 {
+	if (!IsValid(ActiveWidget))
+	{
+		return;
+	}
+
 	if (CurrentInputType != EInputType::Gamepad && FMath::Abs(InAnalogInputEvent.GetAnalogValue()) > GetDefault<UUINavSettings>()->AnalogInputChangeThreshold)
 	{
 		NotifyInputTypeChange(EInputType::Gamepad);
@@ -875,24 +888,28 @@ void UUINavPCComponent::HandleAnalogInputEvent(FSlateApplication& SlateApp, cons
 		return;
 	}
 
+	const EThumbstickAsMouse ThumbstickAsMouse = UsingThumbstickAsMouse();
 	const FKey AnalogKey = InAnalogInputEvent.GetKey();
+	const bool bConsiderLeftStick = ThumbstickAsMouse == EThumbstickAsMouse::LeftThumbstick && (AnalogKey == EKeys::Gamepad_LeftX || AnalogKey == EKeys::Gamepad_LeftY);
+	const bool bConsiderRightStick = ThumbstickAsMouse == EThumbstickAsMouse::RightThumbstick && (AnalogKey == EKeys::Gamepad_RightX || AnalogKey == EKeys::Gamepad_RightY);
+
+	if (!bConsiderLeftStick && !bConsiderRightStick)
+	{
+		return;
+	}
+
 	const float AnalogValue = InAnalogInputEvent.GetAnalogValue();
 	const bool bIsHorizontal = AnalogKey == EKeys::Gamepad_LeftX || AnalogKey == EKeys::Gamepad_RightX;
 	if (bIsHorizontal) ThumbstickDelta.X = AnalogValue;
 	else ThumbstickDelta.Y = AnalogValue;
 
-	const EThumbstickAsMouse ThumbstickAsMouse = UsingThumbstickAsMouse();
-	if (ThumbstickAsMouse != EThumbstickAsMouse::None)
+	if (bConsiderLeftStick || bConsiderRightStick)
 	{
-		if ((ThumbstickAsMouse == EThumbstickAsMouse::LeftThumbstick && (AnalogKey == EKeys::Gamepad_LeftX || AnalogKey == EKeys::Gamepad_LeftY)) ||
-			(ThumbstickAsMouse == EThumbstickAsMouse::RightThumbstick && (AnalogKey == EKeys::Gamepad_RightX || AnalogKey == EKeys::Gamepad_RightY)))
+		if (ThumbstickDelta == FVector2D::ZeroVector)
 		{
-			if (ThumbstickDelta == FVector2D::ZeroVector)
-			{
-				RefreshNavigationKeys();
-			}
-			bReceivedAnalogInput = true;
+			RefreshNavigationKeys();
 		}
+		bReceivedAnalogInput = true;
 	}
 
 	if (bScrollWithRightThumbstick &&

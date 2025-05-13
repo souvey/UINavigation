@@ -16,6 +16,7 @@
 #include "Components/UniformGridSlot.h"
 #include "Components/GridPanel.h"
 #include "Components/GridSlot.h"
+#include "Components/PanelWidget.h"
 #include "Framework/Application/SlateApplication.h"
 #if IS_VR_PLATFORM
 #include "IXRTrackingSystem.h"
@@ -399,6 +400,40 @@ UWidget* UUINavBlueprintFunctionLibrary::GetFirstWidgetInUserWidget(const UUserW
 	}
 
 	return UserWidget->WidgetTree->RootWidget;
+}
+
+UUINavComponent* UUINavBlueprintFunctionLibrary::GetValidUINavComponentInWidget(const UPanelWidget* const Widget)
+{
+	if (!IsValid(Widget))
+	{
+		return nullptr;
+	}
+
+	for (UWidget* ChildWidget : Widget->GetAllChildren())
+	{
+		UUINavComponent* ChildComponent = Cast<UUINavComponent>(ChildWidget);
+		if (IsValid(ChildComponent))
+		{
+			if (ChildComponent->CanBeNavigated())
+			{
+				return ChildComponent;
+			}
+		}
+		else
+		{
+			UPanelWidget* ChildPanel = Cast<UPanelWidget>(ChildWidget);
+			if (IsValid(ChildPanel))
+			{
+				UUINavComponent* NestedChildComponent = GetValidUINavComponentInWidget(ChildPanel);
+				if (IsValid(NestedChildComponent))
+				{
+					return NestedChildComponent;
+				}
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 const UUINavSettings* UUINavBlueprintFunctionLibrary::GetUINavSettings()
