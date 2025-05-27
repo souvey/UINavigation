@@ -11,4 +11,13 @@ struct FInputIconMapping : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UINav Input")
 	TSoftObjectPtr<class UTexture2D> InputIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UINav Input")
+	TSoftObjectPtr<class UFont> InputIconFont;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UINav Input")
+	FString InputIconFontTextSolid;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UINav Input")
+	FString InputIconFontTextOutline;
 };

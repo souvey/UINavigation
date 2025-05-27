@@ -1258,8 +1258,12 @@ UTexture2D* UUINavPCComponent::GetKeyIcon(const FKey Key) const
 
 TSoftObjectPtr<UTexture2D> UUINavPCComponent::GetSoftKeyIcon(const FKey Key) const
 {
-	FInputIconMapping* KeyIcon = nullptr;
+	return GetKeyIconMapping(Key).InputIcon;
+}
 
+FInputIconMapping UUINavPCComponent::GetKeyIconMapping(const FKey Key) const
+{
+	FInputIconMapping* KeyIcon = nullptr;
 	if (Key.IsGamepadKey())
 	{
 		if (CurrentPlatformData.GamepadKeyIconData != nullptr && CurrentPlatformData.GamepadKeyIconData->GetRowMap().Contains(Key.GetFName()))
@@ -1274,8 +1278,7 @@ TSoftObjectPtr<UTexture2D> UUINavPCComponent::GetSoftKeyIcon(const FKey Key) con
 			KeyIcon = reinterpret_cast<FInputIconMapping*>(KeyboardMouseKeyIconData->GetRowMap()[Key.GetFName()]);
 		}
 	}
-
-	return KeyIcon != nullptr ? KeyIcon->InputIcon : nullptr;
+	return KeyIcon != nullptr ? *KeyIcon : FInputIconMapping();
 }
 
 UTexture2D* UUINavPCComponent::GetEnhancedInputIcon(const UInputAction* Action, const EInputAxis Axis, const EAxisType Scale, const EInputRestriction InputRestriction) const

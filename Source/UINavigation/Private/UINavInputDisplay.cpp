@@ -11,6 +11,8 @@
 #include "UINavSettings.h"
 #include "UINavBlueprintFunctionLibrary.h"
 #include "UINavMacros.h"
+#include "Data/InputIconMapping.h"
+#include "Engine/Font.h"
 
 void UUINavInputDisplay::NativeConstruct()
 {
@@ -102,6 +104,7 @@ void UUINavInputDisplay::UpdateInputVisuals()
 
 	if (IsValid(InputText)) InputText->SetVisibility(ESlateVisibility::Collapsed);
 	if (IsValid(InputRichText)) InputRichText->SetVisibility(ESlateVisibility::Collapsed);
+	if (IsValid(InputIconText)) InputIconText->SetVisibility(ESlateVisibility::Collapsed);
 	InputImage->SetVisibility(ESlateVisibility::Collapsed);
 
 	FKey Key;
@@ -118,6 +121,16 @@ void UUINavInputDisplay::UpdateInputVisuals()
 		if (!Key.IsValid()) Key = UINavPC->GetEnhancedInputKey(InputAction, Axis, Scale, EInputRestriction::Keyboard_Mouse);
 	}
 
+	FInputIconMapping Icon = UINavPC->GetKeyIconMapping(Key);
+	UFont* Font = Icon.InputIconFont.LoadSynchronous();
+	if (DisplayType != EInputDisplayType::Text && IsValid(Font) && IsValid(InputIconText))
+	{
+		InputIconText->SetFont(FSlateFontInfo(Font, InputIconText->GetFont().Size));
+		InputIconText->SetText(FText::FromString(Icon.InputIconFontTextSolid));
+		InputIconText->SetVisibility(ESlateVisibility::Visible);
+		return;
+	}
+	
 	TSoftObjectPtr<UTexture2D> NewSoftTexture = GetDefault<UUINavSettings>()->bLoadInputIconsAsync ?
 		UINavPC->GetSoftKeyIcon(Key) : UINavPC->GetKeyIcon(Key);
 		

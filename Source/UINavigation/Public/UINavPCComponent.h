@@ -515,6 +515,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = UINavController)
 	TSoftObjectPtr<UTexture2D> GetSoftKeyIcon(const FKey Key) const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = UINavController)
+	FInputIconMapping GetKeyIconMapping(const FKey Key) const;
+	
 	//Get first found Icon associated with the given enhanced input action
 	//Will search the icon table
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = UINavController)

@@ -56,6 +56,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "InputDisplay")
 	URichTextBlock* InputRichText = nullptr;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional), Category = "InputDisplay")
+	UTextBlock* InputIconText = nullptr;
+
 protected:
 
 	UPROPERTY(EditAnywhere, Category = "InputDisplay")
