@@ -125,7 +125,10 @@ void UUINavInputDisplay::UpdateInputVisuals()
 	UFont* Font = Icon.InputIconFont.LoadSynchronous();
 	if (DisplayType != EInputDisplayType::Text && IsValid(Font) && IsValid(InputIconText))
 	{
-		InputIconText->SetFont(FSlateFontInfo(Font, InputIconText->GetFont().Size));
+		
+		FSlateFontInfo FontInfo(Font, InputIconText->GetFont().Size);
+		FontInfo.OutlineSettings = InputIconText->GetFont().OutlineSettings;
+		InputIconText->SetFont(FontInfo);
 		InputIconText->SetText(FText::FromString(Icon.InputIconFontTextSolid));
 		InputIconText->SetVisibility(ESlateVisibility::Visible);
 		return;
