@@ -152,7 +152,49 @@ void UUINavInputDisplay::UpdateInputVisuals()
 		const FText InputRawText = UINavPC->GetKeyText(Key);
 		if (IsValid(InputText))
 		{
-			InputText->SetText(InputRawText);
+			// NOTE(souvey): this is a hack due to how I'm currently constructing the visuals for keys.
+			// I should probably figure out where to move this into game-specific code, rather than this plugin.
+			FString Text = InputRawText.ToUpper().ToString();
+			bool bValid = false;
+			for (const TCHAR Character : Text)
+			{
+				bool bUpperLetter = Character >= 65 && Character <= 90;
+				bool bDigit = Character >= 48 && Character <= 57;
+				bool bSpace = Character == 32;
+				if (!bUpperLetter && !bDigit && !bSpace)
+				{
+					bValid = false;
+					break;
+				}
+			}
+			if (!bValid || Text.IsEmpty())
+			{
+				Text = "";
+				bool bWasLower = false;
+				for (const TCHAR Character : Key.GetFName().ToString())
+				{
+					bool bUpperLetter = Character >= 65 && Character <= 90;
+					bool bLowerLetter = Character >= 97 && Character <= 122;
+					bool bDigit = Character >= 48 && Character <= 57;
+					bool bSpace = Character == 32;
+					if (bUpperLetter)
+					{
+						if (bWasLower)
+						{
+							Text.Append(TEXT(" "));
+						}
+						Text.AppendChar(Character);
+					} else if (bLowerLetter)
+					{
+						Text.AppendChar(Character - 32);
+					} else if (bDigit || bSpace)
+					{
+						Text.AppendChar(Character);
+					}
+					bWasLower = bLowerLetter;
+				}
+			}
+			InputText->SetText(FText::FromString(Text));
 			InputText->SetVisibility(ESlateVisibility::Visible);
 		}
 
