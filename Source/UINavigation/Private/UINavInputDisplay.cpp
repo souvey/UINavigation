@@ -155,7 +155,7 @@ void UUINavInputDisplay::UpdateInputVisuals()
 			// NOTE(souvey): this is a hack due to how I'm currently constructing the visuals for keys.
 			// I should probably figure out where to move this into game-specific code, rather than this plugin.
 			FString Text = InputRawText.ToUpper().ToString();
-			bool bValid = false;
+			bool bValid = true;
 			for (const TCHAR Character : Text)
 			{
 				bool bUpperLetter = Character >= 65 && Character <= 90;
