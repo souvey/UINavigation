@@ -81,7 +81,7 @@ public:
 
 	// The amount of mouse movement delta that will trigger a rebind attempt when listening to a new key for input rebinding
 	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "Settings")
-	float MouseMoveRebindThreshold = 1.0f;
+	float MouseMoveRebindThreshold = 2.0f;
 
 	// The amount of mouse movement delta that will trigger the input type being changed to mouse
 	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "Settings")

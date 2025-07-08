@@ -523,8 +523,6 @@ void UUINavPCComponent::SetActiveWidget(UUINavWidget * NewActiveWidget)
 	RefreshNavigationKeys();
 
 	const UUINavWidget* const CommonParent = GetFirstCommonParent(ActiveWidget, OldActiveWidget);
-	RemoveInputContextFromUINavWidget(OldActiveWidget, CommonParent);
-	AddInputContextFromUINavWidget(ActiveWidget, CommonParent);
 	
 	IUINavPCReceiver::Execute_OnActiveWidgetChanged(GetOwner(), OldActiveWidget, ActiveWidget);
 	
@@ -567,20 +565,14 @@ void UUINavPCComponent::NotifyNavigatedTo(UUINavWidget* NavigatedWidget)
 		SetActiveWidget(NavigatedWidget);
 	}
 
-	UUINavWidget* CommonParent = OldActiveWidget != nullptr ? OldActiveWidget->GetMostOuterUINavWidget() : NavigatedWidget->GetMostOuterUINavWidget();
-	if (CommonParent == nullptr)
-	{
-		return;
-	}
-
+	UUINavWidget* CommonParent = OldActiveWidget != nullptr && OldActiveWidget->GetMostOuterUINavWidget() == NavigatedWidget->GetMostOuterUINavWidget() ? OldActiveWidget->GetMostOuterUINavWidget() : nullptr;
 	ActiveSubWidget = CommonParent != NavigatedWidget ? NavigatedWidget : nullptr;
 
 	uint8 Depth = 0;
 	const TArray<int>& OldPath = OldActiveWidget != nullptr ? OldActiveWidget->GetUINavWidgetPath() : TArray<int>();
 	const TArray<int>& NewPath = NavigatedWidget != nullptr ? NavigatedWidget->GetUINavWidgetPath() : TArray<int>();
 
-	if (OldPath.Num() == Depth && OldActiveWidget != nullptr) OldActiveWidget->LoseNavigation(NavigatedWidget);
-	if (NewPath.Num() == Depth && NavigatedWidget != nullptr) NavigatedWidget->GainNavigation(OldActiveWidget);
+	if (OldPath.IsEmpty() && OldActiveWidget != nullptr) OldActiveWidget->LoseNavigation(NavigatedWidget);
 
 	while (true)
 	{
@@ -599,7 +591,7 @@ void UUINavPCComponent::NotifyNavigatedTo(UUINavWidget* NavigatedWidget)
 				break;
 			}
 		}
-		else
+		else if (IsValid(CommonParent))
 		{
 			CommonParent = CommonParent->GetChildUINavWidget(OldIndex);
 		}
@@ -607,6 +599,8 @@ void UUINavPCComponent::NotifyNavigatedTo(UUINavWidget* NavigatedWidget)
 		if (OldPath.Num() == Depth && OldActiveWidget != nullptr) OldActiveWidget->LoseNavigation(NavigatedWidget);
 		if (NewPath.Num() == Depth && NavigatedWidget != nullptr) NavigatedWidget->GainNavigation(OldActiveWidget);
 	}
+
+	if (NewPath.IsEmpty() && NavigatedWidget != nullptr) NavigatedWidget->GainNavigation(OldActiveWidget);
 
 	if (ActiveWidget != NavigatedWidget)
 	{
@@ -980,6 +974,10 @@ void UUINavPCComponent::HandleMouseMoveEvent(FSlateApplication& SlateApp, const 
 			else if (MovementDelta.X < -MouseMoveThreshold)
 			{
 				MouseKey = MouseLeft;
+			}
+			else
+			{
+				return;
 			}
 
 			if (MouseKey.IsValid())
@@ -1736,6 +1734,36 @@ void UUINavPCComponent::MenuNext()
 void UUINavPCComponent::MenuPrevious()
 {
 	IUINavPCReceiver::Execute_OnPrevious(GetOwner());
+}
+
+void UUINavPCComponent::SimulateStartSelect()
+{
+	if (!IsValid(ActiveWidget) || !IsValid(ActiveWidget->GetCurrentComponent()))
+	{
+		return;
+	}
+
+	ActiveWidget->GetCurrentComponent()->NavButton->OnPressed.Broadcast();
+}
+
+void UUINavPCComponent::SimulateStopSelect()
+{
+	if (!IsValid(ActiveWidget) || !IsValid(ActiveWidget->GetCurrentComponent()))
+	{
+		return;
+	}
+
+	ActiveWidget->GetCurrentComponent()->NavButton->OnReleased.Broadcast();
+}
+
+void UUINavPCComponent::SimulateSelect()
+{
+	if (!IsValid(ActiveWidget) || !IsValid(ActiveWidget->GetCurrentComponent()))
+	{
+		return;
+	}
+
+	ActiveWidget->GetCurrentComponent()->NavButton->OnClicked.Broadcast();
 }
 
 void UUINavPCComponent::NotifyNavigationKeyPressed(const FKey& Key, const EUINavigation Direction)

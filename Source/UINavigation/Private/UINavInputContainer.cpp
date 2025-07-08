@@ -35,21 +35,26 @@ void UUINavInputContainer::NativeConstruct()
 	
 	DecidedCallback.BindUFunction(this, FName("SwapKeysDecided"));
 
-	if (IsValid(UINavPC) && IsValid(UINavPC->GetPC()) && IsValid(UINavPC->GetPC()->GetLocalPlayer()))
+	if (IsValid(UINavPC))
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(UINavPC->GetPC()->GetLocalPlayer()); IsValid(PlayerSubsystem))
+		if (IsValid(UINavPC->GetPC()) && IsValid(UINavPC->GetPC()->GetLocalPlayer()))
 		{
-			if (UEnhancedInputUserSettings* PlayerSettings = PlayerSubsystem->GetUserSettings(); IsValid(PlayerSettings))
+			if (UEnhancedInputLocalPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(UINavPC->GetPC()->GetLocalPlayer()); IsValid(PlayerSubsystem))
 			{
-				for (UInputMappingContext* InputContext : InputContexts)
+				if (UEnhancedInputUserSettings* PlayerSettings = PlayerSubsystem->GetUserSettings(); IsValid(PlayerSettings))
 				{
-					if (!PlayerSettings->IsMappingContextRegistered(InputContext))
+					for (UInputMappingContext* InputContext : InputContexts)
 					{
-						PlayerSettings->RegisterInputMappingContext(InputContext);
+						if (!PlayerSettings->IsMappingContextRegistered(InputContext))
+						{
+							PlayerSettings->RegisterInputMappingContext(InputContext);
+						}
 					}
 				}
 			}
 		}
+
+		UINavPC->InputTypeChangedDelegate.AddUniqueDynamic(this, &UUINavInputContainer::OnInputTypeChanged);
 	}
 	
 	WidgetTree->ForWidgetAndChildren(InputBoxesPanel, [this](UWidget* Widget)
@@ -63,6 +68,16 @@ void UUINavInputContainer::NativeConstruct()
 	});
 
 	Super::NativeConstruct();
+}
+
+void UUINavInputContainer::NativeDestruct()
+{
+	if (IsValid(UINavPC))
+	{
+		UINavPC->InputTypeChangedDelegate.RemoveDynamic(this, &UUINavInputContainer::OnInputTypeChanged);
+	}
+
+	Super::NativeDestruct();
 }
 
 FReply UUINavInputContainer::NativeOnFocusReceived(const FGeometry& InGeometry, const FFocusEvent& InFocusEvent)
@@ -110,6 +125,11 @@ bool UUINavInputContainer::RequestKeySwap(const FInputCollisionData& InputCollis
 void UUINavInputContainer::ResetKeyMappings()
 {
 	UUINavBlueprintFunctionLibrary::ResetInputSettings(Cast<APlayerController>(UINavPC->GetOwner()));
+	ForceUpdateInputBoxes();
+}
+
+void UUINavInputContainer::ForceUpdateInputBoxes()
+{
 	for (UUINavInputBox* InputBox : InputBoxes) InputBox->ResetKeyWidgets();
 }
 
@@ -154,6 +174,11 @@ bool UUINavInputContainer::CanUseKey(UUINavInputBox* InputBox, const FKey Compar
 	}
 
 	return true;
+}
+
+void UUINavInputContainer::OnInputTypeChanged(const EInputType InputType)
+{
+	ForceUpdateInputBoxes();
 }
 
 void UUINavInputContainer::SwapKeysDecided(const UPromptDataBase* const PromptData)

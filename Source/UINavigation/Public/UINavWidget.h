@@ -337,11 +337,13 @@ public:
 	*/
 	virtual void UINavSetup();
 
-	UFUNCTION(BlueprintNativeEvent, Category = UINavWidget)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = UINavWidget)
 	UUINavComponent* GetInitialFocusComponent();
 	virtual UUINavComponent* GetInitialFocusComponent_Implementation();
 
 	bool TryFocusOnInitialComponent();
+
+	void SetFocusOnComponent(UUINavComponent* Component);
 
 	void PropagateGainNavigation(UUINavWidget* PreviousActiveWidget, UUINavWidget* NewActiveWidget, const UUINavWidget* const CommonParent);
 
