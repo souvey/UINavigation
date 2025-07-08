@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Gonçalo Marques - All Rights Reserved
+// Copyright (C) 2023 Gonï¿½alo Marques - All Rights Reserved
 
 #pragma once
 
@@ -18,6 +18,7 @@ class UINAVIGATION_API UUINavButtonBase : public UButton
 	
 public:
 	void SetIsFocusable(const bool bInIsButtonFocusable);
+	bool SimulatePress();
 
 protected:
 

@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Gonçalo Marques - All Rights Reserved
+// Copyright (C) 2023 Gonï¿½alo Marques - All Rights Reserved
 
 #pragma once
 
@@ -62,5 +62,7 @@ public:
 	}
 
 	void SetIsButtonFocusable(bool bInIsButtonFocusable);
-
+	bool SimulatePress();
+	virtual FReply OnKeyUp(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
+	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
 };

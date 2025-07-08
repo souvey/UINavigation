@@ -11,6 +11,7 @@
 #include "UINavSettings.h"
 #include "UINavWidgetComponent.h"
 #include "UINavBlueprintFunctionLibrary.h"
+#include "UINavButtonBase.h"
 #include "UINavMacros.h"
 #include "UINavSectionsWidget.h"
 #include "UINavSectionButton.h"
@@ -816,7 +817,8 @@ void UUINavWidget::HandleOnNavigation(FNavigationReply& Reply, UUINavWidget* Wid
 		return;
 	}
 
-	if (Widget->TryConsumeNavigation())
+	bool bIsSectionInput = InNavigationEvent.GetNavigationType() == EUINavigation::Next || InNavigationEvent.GetNavigationType() == EUINavigation::Previous;
+	if (Widget->TryConsumeNavigation(bIsSectionInput))
 	{
 		Reply = FNavigationReply::Stop();
 		return;
@@ -881,9 +883,20 @@ void UUINavWidget::HandleOnKeyDown(FReply& Reply, UUINavWidget* Widget, UUINavCo
 	if (FSlateApplication::Get().GetNavigationActionFromKey(InKeyEvent) == EUINavigationAction::Accept)
 	{
 		Widget->OnRawNavigationAction(EUINavigationAction::Accept);
-		if (!Widget->TryConsumeNavigation())
+		if (!Widget->TryConsumeNavigation(false))
 		{
 			Widget->StartedSelect();
+			Widget->StoppedSelect();
+			if (UUINavComponent* Current = Widget->CurrentComponent)
+			{
+				if (UUINavButtonBase* NavButton = Cast<UUINavButtonBase>(Current->NavButton))
+				{
+					if (NavButton->SimulatePress())
+					{
+						Reply = FReply::Handled();
+					}
+				}
+			}
 			if (bHandleReply)
 			{
 				Reply = FReply::Handled();
@@ -893,9 +906,10 @@ void UUINavWidget::HandleOnKeyDown(FReply& Reply, UUINavWidget* Widget, UUINavCo
 	else if (FSlateApplication::Get().GetNavigationActionFromKey(InKeyEvent) == EUINavigationAction::Back)
 	{
 		Widget->OnRawNavigationAction(EUINavigationAction::Back);
-		if (!Widget->TryConsumeNavigation())
+		if (!Widget->TryConsumeNavigation(true))
 		{
 			Widget->StartedReturn();
+			Widget->StoppedReturn();
 			if (bHandleReply)
 			{
 				Reply = FReply::Handled();
@@ -937,24 +951,16 @@ void UUINavWidget::HandleOnKeyUp(FReply& Reply, UUINavWidget* Widget, UUINavComp
 
 	if (FSlateApplication::Get().GetNavigationActionFromKey(InKeyEvent) == EUINavigationAction::Accept)
 	{
-		if (!Widget->TryConsumeNavigation())
+		if (bHandleReply)
 		{
-			Widget->StoppedSelect();
-			if (bHandleReply)
-			{
-				Reply = FReply::Handled();
-			}
+			Reply = FReply::Handled();
 		}
 	}
 	else if (FSlateApplication::Get().GetNavigationActionFromKey(InKeyEvent) == EUINavigationAction::Back)
 	{
-		if (!Widget->TryConsumeNavigation())
+		if (bHandleReply)
 		{
-			Widget->StoppedReturn();
-			if (bHandleReply)
-			{
-				Reply = FReply::Handled();
-			}
+			Reply = FReply::Handled();
 		}
 	}
 	else
@@ -1947,9 +1953,9 @@ void UUINavWidget::ExecuteReturn(const bool bPress)
 	}
 }
 
-bool UUINavWidget::TryConsumeNavigation()
+bool UUINavWidget::TryConsumeNavigation(bool bIgnoreForcing)
 {
-	if (!bForcingNavigation && !GetDefault<UUINavSettings>()->bForceNavigation)
+	if (!bForcingNavigation && !GetDefault<UUINavSettings>()->bForceNavigation && !bIgnoreForcing)
 	{
 		ForceNavigation();
 		return true;

@@ -620,7 +620,7 @@ public:
 
 	virtual void ExecuteReturn(const bool bPress);
 
-	bool TryConsumeNavigation();
+	bool TryConsumeNavigation(bool bIgnoreForcing);
 
 	bool IsForcingNavigation() const { return bForcingNavigation; }
 

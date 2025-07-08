@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Gonçalo Marques - All Rights Reserved
+// Copyright (C) 2023 Gonï¿½alo Marques - All Rights Reserved
 
 #include "UINavButtonBase.h"
 #include "SUINavButton.h"
@@ -12,6 +12,15 @@ void UUINavButtonBase::SetIsFocusable(const bool bInIsButtonFocusable)
 	{
 		MyUINavButton->SetIsButtonFocusable(bInIsButtonFocusable);
 	}
+}
+
+bool UUINavButtonBase::SimulatePress()
+{
+	if (!MyUINavButton.IsValid())
+	{
+		return false;
+	}
+	return MyUINavButton->SimulatePress();
 }
 
 TSharedRef<SWidget> UUINavButtonBase::RebuildWidget()
