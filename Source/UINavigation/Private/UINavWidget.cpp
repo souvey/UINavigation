@@ -48,6 +48,11 @@ void UUINavWidget::NativeConstruct()
 	bBeingRemoved = false;
 
 	bForcingNavigation = GetDefault<UUINavSettings>()->bForceNavigation;
+	ConfigureUINavPC();
+	if (UINavPC && !UINavPC->IsUsingMouse())
+	{
+		bForcingNavigation = true;
+	}
 
 	const UWorld* const World = GetWorld();
 	OuterUINavWidget = GetOuterObject<UUINavWidget>(this);
@@ -375,7 +380,7 @@ void UUINavWidget::UINavSetup()
 		{
 			SetFocusOnComponent(CurrentComponent);
 		}
-		if (!GetDefault<UUINavSettings>()->bForceNavigation && !IsValid(HoveredComponent))
+		if (!GetDefault<UUINavSettings>()->bForceNavigation && !IsValid(HoveredComponent) && UINavPC->IsUsingMouse())
 		{
 			UnforceNavigation(false);
 		}
@@ -505,7 +510,7 @@ void UUINavWidget::OnRawNavigation_Implementation(EUINavigation Event)
 
 void UUINavWidget::SetCurrentComponent(UUINavComponent* Component)
 {
-	const bool bShouldUnforceNavigation = !IsValid(CurrentComponent) && !GetDefault<UUINavSettings>()->bForceNavigation && !IsValid(HoveredComponent);
+	const bool bShouldUnforceNavigation = !GetDefault<UUINavSettings>()->bForceNavigation && UINavPC->IsUsingMouse() && !IsValid(HoveredComponent);
 
 	CurrentComponent = Component;
 
@@ -1482,7 +1487,7 @@ void UUINavWidget::OnNext_Implementation()
 void UUINavWidget::PropagateOnNext()
 {
 	OnNext();
-	if (IsValid(OuterUINavWidget) && !OuterUINavWidget->bMaintainNavigationForChild)
+	if (IsValid(OuterUINavWidget) && (!OuterUINavWidget->bMaintainNavigationForChild || !IsValid(UINavSwitcher)))
 	{
 		OuterUINavWidget->PropagateOnNext();
 	}
@@ -1499,7 +1504,7 @@ void UUINavWidget::OnPrevious_Implementation()
 void UUINavWidget::PropagateOnPrevious()
 {
 	OnPrevious();
-	if (IsValid(OuterUINavWidget) && !OuterUINavWidget->bMaintainNavigationForChild)
+	if (IsValid(OuterUINavWidget) && (!OuterUINavWidget->bMaintainNavigationForChild || !IsValid(UINavSwitcher)))
 	{
 		OuterUINavWidget->PropagateOnPrevious();
 	}
@@ -1512,7 +1517,16 @@ void UUINavWidget::OnChangedSection_Implementation(const int32 FromIndex, const 
 
 void UUINavWidget::OnInputChanged_Implementation(const EInputType From, const EInputType To)
 {
-
+	if (!GetDefault<UUINavSettings>()->bForceNavigation && To == EInputType::Mouse)
+	{
+		if (bForcingNavigation && (HoveredComponent == nullptr))
+		{
+			UnforceNavigation(true);
+		} else if (!bForcingNavigation && (HoveredComponent != nullptr))
+		{
+			ForceNavigation();
+		}
+	}
 }
 
 void UUINavWidget::PropagateOnInputChanged(const EInputType From, const EInputType To)
@@ -1830,6 +1844,11 @@ void UUINavWidget::NavigatedTo(UUINavComponent* NavigatedToComponent, const bool
 		return;
 	}
 
+	if (!bForcingNavigation && (GetDefault<UUINavSettings>()->bForceNavigation || !UINavPC->IsUsingMouse()))
+	{
+		bForcingNavigation = true;
+	}
+
 	if (bForcingNavigation || (CurrentComponent != NavigatedToComponent && CurrentComponent != nullptr))
 	{
 		UpdateNavigationVisuals(NavigatedToComponent, !bHoverRestoredNavigation);
@@ -1839,12 +1858,7 @@ void UUINavWidget::NavigatedTo(UUINavComponent* NavigatedToComponent, const bool
 		ToggleSelectorVisibility(bForcingNavigation || IsValid(HoveredComponent));
 		RevertAnimation(CurrentComponent);
 	}
-
-	if (!bForcingNavigation && GetDefault<UUINavSettings>()->bForceNavigation)
-	{
-		bForcingNavigation = true;
-	}
-
+	
 	CallOnNavigate(bHadNavigation == bHasNavigation ? CurrentComponent : nullptr, NavigatedToComponent);
 
 	SetCurrentComponent(NavigatedToComponent);
@@ -2060,15 +2074,14 @@ void UUINavWidget::OnHoveredComponent(UUINavComponent* Component)
 {
 	if (!IsValid(Component) || UINavPC == nullptr) return;
 
-	if (UINavPC->HidingMouseCursor() && !UINavPC->OverrideConsiderHover() && GetDefault<UUINavSettings>()->MoveMouseToButtonPosition == ESelectorPosition::None)
-	{
-		Component->SwitchButtonStyle(EButtonStyle::Normal);
-		return;
-	}
-
 	UINavPC->CancelRebind();
 
 	SetHoveredComponent(Component);
+
+	if (!UINavPC->IsUsingMouse())
+	{
+		return;
+	}
 
 	if (Component == CurrentComponent && UINavPC->GetActiveSubWidget() == this)
 	{
@@ -2115,7 +2128,7 @@ void UUINavWidget::OnUnhoveredComponent(UUINavComponent* Component)
 		SetSelectedComponent(nullptr);
 	}
 
-	if (!GetDefault<UUINavSettings>()->bForceNavigation)
+	if (!GetDefault<UUINavSettings>()->bForceNavigation && UINavPC->IsUsingMouse())
 	{
 		UnforceNavigation(true);
 	}

@@ -112,8 +112,6 @@ protected:
 
 	bool bIgnoreFocusByNavigation = false;
 
-	bool bOverrideConsiderHover = false;
-
 	UPROPERTY()
 	TArray<const UInputMappingContext*> CachedInputContexts;
 
@@ -375,8 +373,6 @@ public:
 	bool HidingMouseCursor() const;
 
 	bool ShouldHideMouseCursor() const;
-
-	bool OverrideConsiderHover() const { return bOverrideConsiderHover; }
 
 	UFUNCTION(BlueprintCallable, Category = UINavController)
 	void RefreshNavigationKeys();
