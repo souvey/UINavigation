@@ -1454,6 +1454,7 @@ void UUINavWidget::AttemptUnforceNavigation(const EInputType NewInputType)
 void UUINavWidget::ForceNavigation()
 {
 	bForcingNavigation = true;
+	CallOnNavigate(nullptr, CurrentComponent);
 	UpdateNavigationVisuals(CurrentComponent, true);
 	if (IsValid(CurrentComponent))
 	{
@@ -1464,6 +1465,7 @@ void UUINavWidget::ForceNavigation()
 void UUINavWidget::UnforceNavigation(const bool bHadNavigation)
 {
 	bForcingNavigation = false;
+	CallOnNavigate(CurrentComponent, nullptr);
 	UpdateNavigationVisuals(nullptr, bHadNavigation);
 	if (IsValid(CurrentComponent))
 	{
