@@ -63,7 +63,10 @@ bool UUINavSlider::Update(const bool bNotify /*= true*/)
 {
 	const bool bChangedIndex = Super::Update(false);
 
-	Slider->SetValue(static_cast<float>(OptionIndex) / static_cast<float>(GetMaxOptionIndex()));
+	if (!bMovingSlider)
+	{
+		Slider->SetValue(static_cast<float>(OptionIndex) / static_cast<float>(GetMaxOptionIndex()));
+	}
 	UpdateTextFromPercent(Slider->GetValue());
 
 	if (bChangedIndex && bNotify)
@@ -99,11 +102,26 @@ float UUINavSlider::GetSliderValue() const
 
 void UUINavSlider::NavigateLeft()
 {
-	if (OptionIndex > 0)
+	float MajorIndex = (float)OptionIndex / (float)GetMaxOptionIndex() / IntervalMajor;
+	int NewMajorIndex = FMath::FloorToInt(MajorIndex);
+	if (FMath::IsNearlyEqual(MajorIndex, NewMajorIndex))
 	{
-		OptionIndex--;
+		NewMajorIndex--;
 	}
-	else if (bLoopOptions) OptionIndex = GetMaxOptionIndex();
+
+	if (NewMajorIndex < 0)
+	{
+		if (bLoopOptions)
+		{
+			OptionIndex = GetMaxOptionIndex();
+		} else
+		{
+			OptionIndex = 0;
+		}
+	} else
+	{
+		OptionIndex = FMath::RoundToInt(IntervalMajor * NewMajorIndex / Interval);
+	}
 
 	if (Update())
 	{
@@ -113,11 +131,26 @@ void UUINavSlider::NavigateLeft()
 
 void UUINavSlider::NavigateRight()
 {
-	if (OptionIndex < GetMaxOptionIndex())
+	float MajorIndex = (float)OptionIndex / (float)GetMaxOptionIndex() / IntervalMajor;
+	int NewMajorIndex = FMath::CeilToInt(MajorIndex);
+	if (FMath::IsNearlyEqual(MajorIndex, NewMajorIndex))
 	{
-		OptionIndex++;
+		NewMajorIndex++;
 	}
-	else if (bLoopOptions) OptionIndex = 0;
+
+	if (NewMajorIndex > GetMaxOptionIndex())
+	{
+		if (bLoopOptions)
+		{
+			OptionIndex = 0;
+		} else
+		{
+			OptionIndex = GetMaxOptionIndex();
+		}
+	} else
+	{
+		OptionIndex = FMath::RoundToInt(IntervalMajor * NewMajorIndex / Interval);
+	}
 
 	if (Update())
 	{
@@ -127,9 +160,16 @@ void UUINavSlider::NavigateRight()
 
 void UUINavSlider::HandleOnSliderValueChanged(float InValue)
 {
-	const int32 NewOptionIndex = IndexFromPercent(InValue);
-	const float NewValuePercent = static_cast<float>(NewOptionIndex) / static_cast<float>(GetMaxOptionIndex());
-	UpdateTextFromPercent(NewValuePercent, /*bUpdateSpinBox*/ !bMovingSpinBox);
+	if (bUpdateWhileDragging)
+	{
+		OptionIndex = IndexFromPercent(InValue);
+		Update();
+	} else
+	{
+		const int32 NewOptionIndex = IndexFromPercent(InValue);
+		const float NewValuePercent = static_cast<float>(NewOptionIndex) / static_cast<float>(GetMaxOptionIndex());
+		UpdateTextFromPercent(NewValuePercent, /*bUpdateSpinBox*/ !bMovingSpinBox);
+	}
 }
 
 void UUINavSlider::HandleOnSliderMouseCaptureBegin()
@@ -245,9 +285,16 @@ void UUINavSlider::UpdateTextFromPercent(const float Percent, const bool bUpdate
 	FormatOptions.MinimumFractionalDigits = MinDecimalDigits;
 
 	const float NewValue = MinValue + Percent * Difference;
-	FText NewValueText = FText::AsNumber(NewValue, &FormatOptions);
+	FText NewValueText;
+	if (bUsePercent)
+	{
+		NewValueText = FText::AsPercent(NewValue, &FormatOptions);
+	} else
+	{
+		NewValueText = FText::AsNumber(NewValue, &FormatOptions);
+	}
 	if (!bUseComma) NewValueText = FText::FromString(NewValueText.ToString().Replace(TEXT(","), TEXT(".")));
-
+	
 	SetText(NewValueText);
 
 	if (NavSpinBox != nullptr && bUpdateSpinBox)
