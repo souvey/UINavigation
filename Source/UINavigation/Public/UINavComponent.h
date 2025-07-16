@@ -123,6 +123,8 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = UINavComponent)
 	UScrollBox* GetParentScrollBox() const { return ParentScrollBox; }
 
+	bool HasCursorCapture();
+
 protected:
 
 	virtual FReply NativeOnFocusReceived(const FGeometry& InGeometry, const FFocusEvent& InFocusEvent) override;

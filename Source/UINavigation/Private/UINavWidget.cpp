@@ -661,6 +661,11 @@ void UUINavWidget::NativeTick(const FGeometry & MyGeometry, float DeltaTime)
 		SetMousePositionToButton(CurrentComponent, GetDefault<UUINavSettings>()->MoveMouseToButtonPosition);
 		bUpdateMousePositionNextFrame = false;
 	}
+
+	if (HoveredComponent && !HoveredComponent->IsHovered() && !HoveredComponent->HasCursorCapture())
+	{
+		OnUnhoveredComponent(HoveredComponent);
+	}
 }
 
 void UUINavWidget::RemoveFromParent()
@@ -2115,17 +2120,21 @@ void UUINavWidget::OnUnhoveredComponent(UUINavComponent* Component)
 {
 	if (!IsValid(Component)) return;
 
-	if (IgnoreHoverComponent == nullptr || IgnoreHoverComponent != Component)
-	{
-		SetHoveredComponent(nullptr);
+	bool bHasCursorCapture = Component->HasCursorCapture();
+
+	if (!bHasCursorCapture) {
+		if (IgnoreHoverComponent == nullptr || IgnoreHoverComponent != Component)
+		{
+			SetHoveredComponent(nullptr);
+		}
+
+		if (Component == SelectedComponent)
+		{
+			SetSelectedComponent(nullptr);
+		}
 	}
 
-	if (Component == SelectedComponent)
-	{
-		SetSelectedComponent(nullptr);
-	}
-
-	if (!GetDefault<UUINavSettings>()->bForceNavigation && UINavPC->IsUsingMouse())
+	if (!GetDefault<UUINavSettings>()->bForceNavigation && UINavPC->IsUsingMouse() && !bHasCursorCapture)
 	{
 		UnforceNavigation(true);
 	}

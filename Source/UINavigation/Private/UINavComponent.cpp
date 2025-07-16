@@ -370,6 +370,22 @@ bool UUINavComponent::IsBeingNavigated() const
 	return IsValid(ParentWidget) && ParentWidget->GetCurrentComponent() == this;
 }
 
+bool UUINavComponent::HasCursorCapture()
+{
+	if (FSlateUser* User = FSlateApplication::Get().GetCursorUser().Get())
+	{
+		if (TSharedPtr<SWidget> Captor = User->GetCursorCaptor(); Captor.IsValid())
+		{
+			UUserWidget* Widget = UUINavWidget::FindUserWidgetInWidgetPath(User->GetCursorCaptorPath(), User->GetCursorCaptor());
+			if (Widget && (Widget == this || Widget->IsChildOf(this)))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 FReply UUINavComponent::NativeOnFocusReceived(const FGeometry& InGeometry, const FFocusEvent& InFocusEvent)
 {
 	FReply Reply = Super::NativeOnFocusReceived(InGeometry, InFocusEvent);
