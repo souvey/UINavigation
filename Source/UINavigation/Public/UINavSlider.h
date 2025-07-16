@@ -96,6 +96,7 @@ public:
 
 	bool bMovingSlider = false;
 	bool bMovingSpinBox = false;
+	bool bNavigatedFromWhileMoving = false;
 
 	FLinearColor HandleDefaultColor = FColor::Black;
 	FLinearColor BarDefaultColor = FColor::White;

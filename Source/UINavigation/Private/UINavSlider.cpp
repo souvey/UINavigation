@@ -81,12 +81,20 @@ void UUINavSlider::OnNavigatedTo_Implementation()
 {
 	Slider->SetSliderHandleColor(HandleHoverColor);
 	Slider->SetSliderBarColor(BarHoverColor);
+	bNavigatedFromWhileMoving = false;
 }
 
 void UUINavSlider::OnNavigatedFrom_Implementation()
 {
-	Slider->SetSliderHandleColor(HandleDefaultColor);
-	Slider->SetSliderBarColor(BarDefaultColor);
+	if (bMovingSlider)
+	{
+		bNavigatedFromWhileMoving = true;
+	} else
+	{
+		Slider->SetSliderHandleColor(HandleDefaultColor);
+		Slider->SetSliderBarColor(BarDefaultColor);
+		bNavigatedFromWhileMoving = false;
+	}
 }
 
 void UUINavSlider::SetValueClamped(const float Value)
@@ -185,6 +193,10 @@ void UUINavSlider::HandleOnSliderMouseCaptureEnd()
 	// Workaround for a bug in SSlider: on mouse up, it "restores" the cursor to the default cursor,
 	// rather than to unset, which prevents bubbling up to UUINavGameViewportClient.
 	StaticCastSharedRef<SSlider>(Slider->TakeWidget())->SetCursor(TOptional<EMouseCursor::Type>());
+	if (bNavigatedFromWhileMoving)
+	{
+		OnNavigatedFrom();
+	}
 }
 
 void UUINavSlider::HandleOnSpinBoxMouseCaptureBegin()
