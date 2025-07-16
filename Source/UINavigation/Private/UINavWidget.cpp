@@ -2090,6 +2090,10 @@ void UUINavWidget::OnHoveredComponent(UUINavComponent* Component)
 		if (Component != CurrentComponent)
 		{
 			Component->SwitchButtonStyle(EButtonStyle::Normal);
+		} else
+		{
+			Component->RevertButtonStyle();
+			Component->SwitchButtonStyle(EButtonStyle::Hovered);
 		}
 		return;
 	}
