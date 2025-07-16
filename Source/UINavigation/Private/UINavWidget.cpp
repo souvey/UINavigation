@@ -2087,6 +2087,10 @@ void UUINavWidget::OnHoveredComponent(UUINavComponent* Component)
 
 	if (!UINavPC->IsUsingMouse())
 	{
+		if (Component != CurrentComponent)
+		{
+			Component->SwitchButtonStyle(EButtonStyle::Normal);
+		}
 		return;
 	}
 
