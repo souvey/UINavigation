@@ -2102,12 +2102,6 @@ void UUINavWidget::OnHoveredComponent(UUINavComponent* Component)
 		{
 			UpdateNavigationVisuals(CurrentComponent, false, true);
 			CallOnNavigate(nullptr, CurrentComponent);
-
-			USoundBase* NavigatedSound = Component->GetOnNavigatedSound();
-			if (NavigatedSound != nullptr && bForcingNavigation)
-			{
-				PlaySound(NavigatedSound);
-			}
 		}
 	}
 
