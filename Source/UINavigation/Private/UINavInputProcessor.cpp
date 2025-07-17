@@ -69,6 +69,19 @@ bool FUINavInputProcessor::HandleMouseButtonUpEvent(FSlateApplication& SlateApp,
 
 bool FUINavInputProcessor::HandleMouseWheelOrGestureEvent(FSlateApplication& SlateApp, const FPointerEvent& InWheelEvent, const FPointerEvent* InGesture)
 {
+	if (InGesture != nullptr)
+	{
+		// FSceneViewport::OnTouchGesture (for some reason???) steals keyboard focus on any gesture.
+		// This breaks UINavigation in all sorts of unfortunate ways.
+		// Rather than attempt to fix the focus afterwards, just prevent this from happening at all,
+		// since there's no need for gestures in anything I'm doing.
+		if (InGesture->GetGestureType() == EGestureEvent::Scroll) {
+			// FMacApplication::ProcessScrollWheelEvent converts scrolls into gestures on Mac.
+			// Convert it back to allow scrolling.
+			SlateApp.ProcessMouseWheelOrGestureEvent(InWheelEvent, nullptr);
+		}
+		return true;
+	}
 	if (UINavPC != nullptr)
 	{
 		UINavPC->HandleMouseWheelOrGestureEvent(SlateApp, InWheelEvent, InGesture);

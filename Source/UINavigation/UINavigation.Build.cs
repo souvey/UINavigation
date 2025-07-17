@@ -31,6 +31,7 @@ public class UINavigation : ModuleRules
                 "Slate",
                 "SlateCore",
                 "InputCore",
+                "RenderCore",
                 "EnhancedInput",
                 "RHI",
                 "HeadMountedDisplay",
