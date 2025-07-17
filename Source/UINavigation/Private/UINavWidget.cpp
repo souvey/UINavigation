@@ -1464,6 +1464,10 @@ void UUINavWidget::ForceNavigation()
 	if (IsValid(CurrentComponent))
 	{
 		CurrentComponent->SwitchButtonStyle(EButtonStyle::Hovered);
+		if (UScrollBox* ScrollBox = CurrentComponent->GetParentScrollBox())
+		{
+			ScrollBox->ScrollWidgetIntoView(CurrentComponent, false, ScrollBox->GetNavigationDestination(), ScrollBox->GetNavigationScrollPadding());
+		}
 	}
 }
 
