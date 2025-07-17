@@ -12,6 +12,7 @@ TSharedRef<SWidget> UUINavMouseOnlyButton::RebuildWidget()
 	{
 		if (UUINavPCComponent* UINavPC = PC->FindComponentByClass<UUINavPCComponent>())
 		{
+			OnInputTypeChanged(UINavPC->GetCurrentInputType());
 			UINavPC->InputTypeChangedDelegate.AddDynamic(this, &UUINavMouseOnlyButton::OnInputTypeChanged);
 		}
 	}
@@ -42,5 +43,17 @@ void UUINavMouseOnlyButton::OnInputTypeChanged(EInputType InputType)
 		NoMouse.Hovered = NoMouse.Normal;
 		NoMouse.Pressed = NoMouse.Normal;
 		SetStyle(NoMouse);
+	}
+}
+
+void UUINavMouseOnlyButton::ReplaceStyle(FButtonStyle NewStyle)
+{
+	OriginalWidgetStyle = NewStyle;
+	if (APlayerController* PC = Cast<APlayerController>(GetOwningPlayer()))
+	{
+		if (UUINavPCComponent* UINavPC = PC->FindComponentByClass<UUINavPCComponent>())
+		{
+			OnInputTypeChanged(UINavPC->GetCurrentInputType());
+		}
 	}
 }

@@ -22,6 +22,12 @@ class UINAVIGATION_API UUINavMouseOnlyButton : public UButton
 	UFUNCTION()
 	void OnInputTypeChanged(EInputType InputType);
 
+	UFUNCTION(BlueprintPure)
+	FButtonStyle GetOriginalStyle() { return OriginalWidgetStyle; }
+	
+	UFUNCTION(BlueprintCallable)
+	void ReplaceStyle(FButtonStyle NewStyle);
+
 private:
 	UPROPERTY()
 	FButtonStyle OriginalWidgetStyle;	
