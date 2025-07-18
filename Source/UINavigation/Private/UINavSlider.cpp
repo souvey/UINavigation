@@ -110,9 +110,9 @@ float UUINavSlider::GetSliderValue() const
 
 void UUINavSlider::NavigateLeft()
 {
-	float MajorIndex = (float)OptionIndex / (float)GetMaxOptionIndex() / IntervalMajor;
+	float MajorIndex = (float)OptionIndex / (float)GetMaxOptionIndex() / (IntervalMajor/Difference);
 	int NewMajorIndex = FMath::FloorToInt(MajorIndex);
-	if (FMath::IsNearlyEqual(MajorIndex, NewMajorIndex))
+	if (FMath::IsNearlyEqual(MajorIndex, NewMajorIndex, 0.001))
 	{
 		NewMajorIndex--;
 	}
@@ -128,7 +128,7 @@ void UUINavSlider::NavigateLeft()
 		}
 	} else
 	{
-		OptionIndex = FMath::RoundToInt(IntervalMajor * NewMajorIndex / Interval);
+		OptionIndex = FMath::RoundToInt((IntervalMajor/Difference) * NewMajorIndex / (Interval/Difference));
 	}
 
 	if (Update())
@@ -139,9 +139,9 @@ void UUINavSlider::NavigateLeft()
 
 void UUINavSlider::NavigateRight()
 {
-	float MajorIndex = (float)OptionIndex / (float)GetMaxOptionIndex() / IntervalMajor;
+	float MajorIndex = (float)OptionIndex / (float)GetMaxOptionIndex() / (IntervalMajor/Difference);
 	int NewMajorIndex = FMath::CeilToInt(MajorIndex);
-	if (FMath::IsNearlyEqual(MajorIndex, NewMajorIndex))
+	if (FMath::IsNearlyEqual(MajorIndex, NewMajorIndex, 0.001))
 	{
 		NewMajorIndex++;
 	}
@@ -157,7 +157,7 @@ void UUINavSlider::NavigateRight()
 		}
 	} else
 	{
-		OptionIndex = FMath::RoundToInt(IntervalMajor * NewMajorIndex / Interval);
+		OptionIndex = FMath::RoundToInt((IntervalMajor/Difference) * NewMajorIndex / (Interval/Difference));
 	}
 
 	if (Update())
