@@ -13,10 +13,10 @@ FUINavigationConfig::FUINavigationConfig(const UUINavPCComponent* const UINavPC,
 	bTabNavigation = false;
 	bKeyNavigation = true;
 	bAnalogNavigation = bUseAnalogDirectionalInput && !bUsingThumbstickAsMouse;
-	const UInputMappingContext* const InputContext = UINavPC->GetUINavInputContext();
+	const UInputMappingContext* const InputContext = UINavPC->GetUINavInputContext(UINavPC->GetActiveWidget());
 	const UUINavSettings* const UINavSettings = GetDefault<UUINavSettings>();
 	const UUINavEnhancedInputActions* const InputActions = UINavSettings->EnhancedInputActions.LoadSynchronous();
-	if (InputActions == nullptr || InputContext == nullptr)
+	if (InputActions == nullptr || InputContext == nullptr || !UINavSettings->bUseFocusSystemNavigationInputs)
 	{
 		return;
 	}

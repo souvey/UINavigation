@@ -349,6 +349,10 @@ public:
 
 	virtual void GainNavigation(UUINavWidget* PreviousActiveWidget);
 
+	const TMap<FString, TObjectPtr<UInputMappingContext>>* const GetInputContextOverrides() const;
+
+	const TObjectPtr<UInputMappingContext> GetInputContextOverride() const;
+
 	/**
 	*	Called when navigation is gained
 	*/
@@ -707,7 +711,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = UINavWidget, meta = (AdvancedDisplay = 1))
 	virtual void ReturnToParent(const bool bRemoveAllParents = false, const int ZOrder = 0);
 
-	void RemoveAllParents();
+	void RemoveSelfAndAllParents();
 
 	int GetWidgetHierarchyDepth(UWidget* Widget) const;
 

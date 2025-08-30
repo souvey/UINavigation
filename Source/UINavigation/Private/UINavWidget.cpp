@@ -36,6 +36,7 @@
 #include "Engine/Console.h"
 #include "Curves/CurveFloat.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/InputDelegateBinding.h"
 
 UUINavWidget::UUINavWidget(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
@@ -92,7 +93,6 @@ void UUINavWidget::NativeConstruct()
 		if (bShouldDestroyParent)
 		{
 			ParentWidget = OuterParentWidget->ParentWidget;
-			OuterParentWidget->Destruct();
 			OuterParentWidget = nullptr;
 		}
 	}
@@ -110,7 +110,8 @@ void UUINavWidget::NativeConstruct()
 			}
 		}
 
-		if (WidgetComp == nullptr) ReturnedFromWidget->Destruct();
+		InitializeInputComponent();
+		UInputDelegateBinding::BindInputDelegates(GetClass(), InputComponent, this);
 	}
 
 	PreSetup(!bCompletedSetup);
@@ -435,15 +436,48 @@ void UUINavWidget::GainNavigation(UUINavWidget* PreviousActiveWidget)
 
 	UINavPC->AddInputContextFromUINavWidget(this);
 
-	if (IsValid(FirstComponent))
-	{
-		bHasNavigation = true;
-	}
+	bHasNavigation = true;
 
 	const bool bPreviousWidgetIsChild = PreviousActiveWidget != nullptr ?
                                     UUINavBlueprintFunctionLibrary::ContainsArray<int>(PreviousActiveWidget->GetUINavWidgetPath(), UINavWidgetPath) :
                                     false;
 	OnGainedNavigation(PreviousActiveWidget, bPreviousWidgetIsChild);
+}
+
+const TMap<FString, TObjectPtr<UInputMappingContext>>* const UUINavWidget::GetInputContextOverrides() const
+{
+	if (!UINavInputContextOverrides.IsEmpty())
+	{
+		return &UINavInputContextOverrides;
+	}
+
+	if (IsValid(OuterUINavWidget))
+	{
+		return OuterUINavWidget->GetInputContextOverrides();
+	}
+
+	return nullptr;
+}
+
+TObjectPtr<UInputMappingContext> const UUINavWidget::GetInputContextOverride() const
+{
+	const TMap<FString, TObjectPtr<UInputMappingContext>>* const ActiveWidgetOverrides = GetInputContextOverrides();
+	if (ActiveWidgetOverrides != nullptr)
+	{
+		const TObjectPtr<UInputMappingContext>* BaselineInputContextOverride = ActiveWidgetOverrides->Find(TEXT(""));
+		if (BaselineInputContextOverride != nullptr)
+		{
+			return *BaselineInputContextOverride;
+		}
+
+		const TObjectPtr<UInputMappingContext>* PlatformInputContextOverride = ActiveWidgetOverrides->Find(UGameplayStatics::GetPlatformName());
+		if (PlatformInputContextOverride != nullptr)
+		{
+			return *PlatformInputContextOverride;
+		}
+	}
+
+	return nullptr;
 }
 
 void UUINavWidget::OnGainedNavigation_Implementation(UUINavWidget* PreviousActiveWidget, const bool bFromChild)
@@ -471,7 +505,7 @@ void UUINavWidget::LoseNavigation(UUINavWidget* NewActiveWidget)
 
 	UINavPC->RemoveInputContextFromUINavWidget(this);
 
-	const bool bHaveSameOuter = NewActiveWidget->GetMostOuterUINavWidget() == GetMostOuterUINavWidget();
+	const bool bHaveSameOuter = IsValid(NewActiveWidget) ? NewActiveWidget->GetMostOuterUINavWidget() == GetMostOuterUINavWidget() : false;
 
 	const bool bNewWidgetIsChild = NewActiveWidget != nullptr && NewActiveWidget->GetUINavWidgetPath().Num() > 0 ?
 		UUINavBlueprintFunctionLibrary::ContainsArray<int>(NewActiveWidget->GetUINavWidgetPath(), UINavWidgetPath) && bHaveSameOuter :
@@ -482,7 +516,7 @@ void UUINavWidget::LoseNavigation(UUINavWidget* NewActiveWidget)
 		return;
 	}
 
-	if (!NewActiveWidget->bMaintainNavigationForChild || !bNewWidgetIsChild)
+	if ((IsValid(NewActiveWidget) && !NewActiveWidget->bMaintainNavigationForChild) || !bNewWidgetIsChild)
 	{
 		UpdateNavigationVisuals(nullptr, true, false, true);
 	}
@@ -889,7 +923,7 @@ void UUINavWidget::HandleOnKeyDown(FReply& Reply, UUINavWidget* Widget, UUINavCo
 		return;
 	}
 
-	const bool bHandleReply = Widget->OuterUINavWidget == nullptr && GetDefault<UUINavSettings>()->bConsumeNavigationInputs;
+	const bool bHandleReply = Widget->OuterUINavWidget == nullptr;
 	if (FSlateApplication::Get().GetNavigationActionFromKey(InKeyEvent) == EUINavigationAction::Accept)
 	{
 		Widget->OnRawNavigationAction(EUINavigationAction::Accept);
@@ -957,7 +991,7 @@ void UUINavWidget::HandleOnKeyUp(FReply& Reply, UUINavWidget* Widget, UUINavComp
 		return;
 	}
 
-	const bool bHandleReply = Widget->OuterUINavWidget == nullptr && GetDefault<UUINavSettings>()->bConsumeNavigationInputs;
+	const bool bHandleReply = Widget->OuterUINavWidget == nullptr;
 
 	if (FSlateApplication::Get().GetNavigationActionFromKey(InKeyEvent) == EUINavigationAction::Accept)
 	{
@@ -1672,6 +1706,12 @@ UUINavWidget * UUINavWidget::GoToBuiltWidget(UUINavWidget* NewWidget, const bool
 		IgnoreHoverComponent = HoveredComponent;
 	}
 	
+	if (!UINavPC->IsWidgetActive(this))
+	{
+		DISPLAYERROR("GoToWidget called on non-active UINavWidget! Use the UINavPC's GoToWidget to fix this.");
+		return nullptr;
+	}
+
 	if (OuterUINavWidget != nullptr || NewOuterUINavWidget == this)
 	{
 		if (NewOuterUINavWidget == OldOuterUINavWidget)
@@ -1724,6 +1764,7 @@ void UUINavWidget::ReturnToParent(const bool bRemoveAllParents, const int ZOrder
 		if (bAllowRemoveIfRoot && UINavPC != nullptr)
 		{
 			UINavPC->SetActiveWidget(nullptr);
+			LoseNavigation(nullptr);
 
 			SelectCount = 0;
 			SetSelectedComponent(nullptr);
@@ -1770,10 +1811,7 @@ void UUINavWidget::ReturnToParent(const bool bRemoveAllParents, const int ZOrder
 			{
 				IUINavPCReceiver::Execute_OnRootWidgetRemoved(UINavPC->GetOwner());
 				UINavPC->SetActiveWidget(nullptr);
-				ParentWidget->RemoveAllParents();
-				bReturningToParent = true;
-				RemoveFromParent();
-				Destruct();
+				RemoveSelfAndAllParents();
 			}
 			else
 			{
@@ -1803,15 +1841,16 @@ void UUINavWidget::ReturnToParent(const bool bRemoveAllParents, const int ZOrder
 	}
 }
 
-void UUINavWidget::RemoveAllParents()
+void UUINavWidget::RemoveSelfAndAllParents()
 {
+	bHasNavigation = true;
+	LoseNavigation(nullptr);
 	if (ParentWidget != nullptr)
 	{
-		ParentWidget->RemoveAllParents();
+		ParentWidget->RemoveSelfAndAllParents();
 	}
 	bReturningToParent = true;
 	RemoveFromParent();
-	Destruct();
 }
 
 int UUINavWidget::GetWidgetHierarchyDepth(UWidget* Widget) const
