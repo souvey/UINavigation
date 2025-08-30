@@ -1969,6 +1969,7 @@ void UUINavWidget::StartedReturn()
 {
 	const bool bWasPressingReturn = bPressingReturn;
 	SetPressingReturn(true);
+	bIgnoreFirstReturn = false;
 	if (GetDefault<UUINavSettings>()->bReturnOnPress && !bWasPressingReturn)
 	{
 		ExecuteReturn(/*bPress*/ true);
