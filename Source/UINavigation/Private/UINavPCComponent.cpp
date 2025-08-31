@@ -1742,22 +1742,23 @@ bool UUINavPCComponent::IsAxis(const FKey& Key) const
 	return IsAxis2D(Key) || AxisToKeyMap.Contains(Key);
 }
 
-bool UUINavPCComponent::IsNavigationKeyEvent(const FKeyEvent& KeyEvent) const
+bool UUINavPCComponent::IsKeyboardOnlyNavigationKeyEvent(const FKeyEvent& KeyEvent) const
 {
 	if (!IsValid(ActiveWidget))
 	{
 		return false;
 	}
 	const FSlateApplication& SlateApplication = FSlateApplication::Get();
-	return SlateApplication.GetNavigationActionFromKey(KeyEvent) != EUINavigationAction::Invalid ||
-		SlateApplication.GetNavigationDirectionFromKey(KeyEvent) != EUINavigation::Invalid;
+	EUINavigationAction Action = SlateApplication.GetNavigationActionFromKey(KeyEvent);
+	EUINavigation Direction = SlateApplication.GetNavigationDirectionFromKey(KeyEvent);
+	return (Action != EUINavigationAction::Invalid || Direction != EUINavigation::Invalid) && Action != EUINavigationAction::Back;
 }
 
 void UUINavPCComponent::VerifyInputTypeChangeByKey(const FKeyEvent& KeyEvent, const bool bAttemptUnforceNavigation /*= true*/)
 {
 	const FKey Key = KeyEvent.GetKey();
 	const EInputType NewInputType = GetKeyInputType(Key);
-	if (bPreferMouse && CurrentInputType == EInputType::Mouse && NewInputType == EInputType::Keyboard && !IsNavigationKeyEvent(KeyEvent))
+	if (bPreferMouse && CurrentInputType == EInputType::Mouse && NewInputType == EInputType::Keyboard && !IsKeyboardOnlyNavigationKeyEvent(KeyEvent))
 	{
 		return;
 	}

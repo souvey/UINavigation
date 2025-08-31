@@ -202,7 +202,7 @@ protected:
 	*/
 	static EInputType GetKeyInputType(const FKey& Key);
 
-	bool IsNavigationKeyEvent(const FKeyEvent& Key) const;
+	bool IsKeyboardOnlyNavigationKeyEvent(const FKeyEvent& Key) const;
 
 	/**
 	*	Notifies to the active UUINavWidget that the input type changed
