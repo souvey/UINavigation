@@ -1091,19 +1091,14 @@ void UUINavPCComponent::HandleAnalogInputEvent(FSlateApplication& SlateApp, cons
 	const FKey AnalogKey = InAnalogInputEvent.GetKey();
 	const bool bConsiderLeftStick = ThumbstickAsMouse == EThumbstickAsMouse::LeftThumbstick && (AnalogKey == EKeys::Gamepad_LeftX || AnalogKey == EKeys::Gamepad_LeftY);
 	const bool bConsiderRightStick = ThumbstickAsMouse == EThumbstickAsMouse::RightThumbstick && (AnalogKey == EKeys::Gamepad_RightX || AnalogKey == EKeys::Gamepad_RightY);
-
-	if (!bConsiderLeftStick && !bConsiderRightStick)
-	{
-		return;
-	}
-
 	const float AnalogValue = InAnalogInputEvent.GetAnalogValue();
-	const bool bIsHorizontal = AnalogKey == EKeys::Gamepad_LeftX || AnalogKey == EKeys::Gamepad_RightX;
-	if (bIsHorizontal) ThumbstickDelta.X = AnalogValue;
-	else ThumbstickDelta.Y = AnalogValue;
 
 	if (bConsiderLeftStick || bConsiderRightStick)
 	{
+		const bool bIsHorizontal = AnalogKey == EKeys::Gamepad_LeftX || AnalogKey == EKeys::Gamepad_RightX;
+		if (bIsHorizontal) ThumbstickDelta.X = AnalogValue;
+		else ThumbstickDelta.Y = AnalogValue;
+		
 		if (ThumbstickDelta == FVector2D::ZeroVector)
 		{
 			RefreshNavigationKeys();
