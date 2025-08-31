@@ -969,9 +969,9 @@ void UUINavWidget::HandleOnKeyDown(FReply& Reply, UUINavWidget* Widget, UUINavCo
 	}
 	if (Direction != EUINavigation::Invalid)
 	{
-		Widget->UINavPC->NotifyNavigationKeyPressed(InKeyEvent.GetKey(), Direction);
 		if (bHandleReply)
 		{
+			Widget->UINavPC->NotifyNavigationKeyPressed(InKeyEvent.GetKey(), Direction);
 			Reply = FReply::Handled();
 		}
 	}
