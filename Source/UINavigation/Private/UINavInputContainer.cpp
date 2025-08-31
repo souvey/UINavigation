@@ -149,6 +149,11 @@ bool UUINavInputContainer::CanUseKey(UUINavInputBox* InputBox, const FKey Compar
 {
 	if (InputBox->EnhancedInputGroups.Num() == 0) InputBox->EnhancedInputGroups.Add(-1);
 
+	if (bAllowCollisions)
+	{
+		return true;
+	}
+
 	for (int i = 0; i < InputBoxes.Num(); ++i)
 	{
 		if (InputBox == InputBoxes[i]) continue;

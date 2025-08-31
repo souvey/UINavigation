@@ -21,56 +21,66 @@ FUINavigationConfig::FUINavigationConfig(const UUINavPCComponent* const UINavPC,
 		return;
 	}
 
-	for (const FEnhancedActionKeyMapping& Mapping : InputContext->GetMappings())
-	{
-		if (bAllowDirectionalInput)
+	for (int Pass = 0; Pass < 2; ++Pass) {
+		for (const FEnhancedActionKeyMapping& Mapping : InputContext->GetMappings())
 		{
-			if (Mapping.Action == InputActions->IA_MenuUp)
+			if (Pass == 0 && Mapping.GetPlayerMappableKeySettings() || (Pass != 0 && !Mapping.GetPlayerMappableKeySettings()))
 			{
-				KeyEventRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigation::Up);
+				continue;
 			}
-			else if (Mapping.Action == InputActions->IA_MenuDown)
+			FKey Key = UINavPC->GetCurrentKey(Mapping);
+			if (Pass == 1 && (KeyEventRules.Contains(Key) || Key == EKeys::LeftMouseButton)) {
+				continue;
+			}
+			if (bAllowDirectionalInput)
 			{
-				KeyEventRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigation::Down);
+				if (Mapping.Action == InputActions->IA_MenuUp)
+				{
+					KeyEventRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigation::Up);
+				}
+				else if (Mapping.Action == InputActions->IA_MenuDown)
+				{
+					KeyEventRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigation::Down);
+				}
+				else if (Mapping.Action == InputActions->IA_MenuLeft)
+				{
+					KeyEventRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigation::Left);
+				}
+				else if (Mapping.Action == InputActions->IA_MenuRight)
+				{
+					KeyEventRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigation::Right);
+				}
 			}
-			else if (Mapping.Action == InputActions->IA_MenuLeft)
+			
+			if (bAllowSectionInput)
 			{
-				KeyEventRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigation::Left);
+				if (Mapping.Action == InputActions->IA_MenuNext)
+				{
+					KeyEventRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigation::Next);
+				}
+				else if (Mapping.Action == InputActions->IA_MenuPrevious)
+				{
+					KeyEventRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigation::Previous);
+				}
 			}
-			else if (Mapping.Action == InputActions->IA_MenuRight)
-			{
-				KeyEventRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigation::Right);
-			}
-		}
-		
-		if (bAllowSectionInput)
-		{
-			if (Mapping.Action == InputActions->IA_MenuNext)
-			{
-				KeyEventRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigation::Next);
-			}
-			else if (Mapping.Action == InputActions->IA_MenuPrevious)
-			{
-				KeyEventRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigation::Previous);
-			}
-		}
 
-		if (bAllowAccept && Mapping.Action == InputActions->IA_MenuSelect)
-		{
-			const bool bIsGamepadKey = UINavPC->GetCurrentKey(Mapping).IsGamepadKey();
-			if (bIsGamepadKey)
+			if (bAllowAccept && Mapping.Action == InputActions->IA_MenuSelect)
 			{
-				GamepadSelectKeys.AddUnique(UINavPC->GetCurrentKey(Mapping));
-			}
+				const bool bIsGamepadKey = UINavPC->GetCurrentKey(Mapping).IsGamepadKey();
+				if (bIsGamepadKey)
+				{
+					GamepadSelectKeys.AddUnique(UINavPC->GetCurrentKey(Mapping));
+				}
 
-			if (!bIsGamepadKey || !bUsingThumbstickAsMouse)
-			{
-				KeyActionRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigationAction::Accept);
+				if (!bIsGamepadKey || !bUsingThumbstickAsMouse)
+				{
+					KeyActionRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigationAction::Accept);
+				}
 			}
-		}
-		else if (bAllowBack && Mapping.Action == InputActions->IA_MenuReturn)
-		{
-			KeyActionRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigationAction::Back);
+			else if (bAllowBack && Mapping.Action == InputActions->IA_MenuReturn)
+			{
+				KeyActionRules.Emplace(UINavPC->GetCurrentKey(Mapping), EUINavigationAction::Back);
+			}
 		}
 	}
 }

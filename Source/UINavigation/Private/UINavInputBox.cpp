@@ -149,6 +149,10 @@ void UUINavInputBox::FinishUpdateNewKey()
 	FinishUpdateNewEnhancedInputKey(AwaitingNewKey);
 	Container->OnKeyRebinded(InputName, OldKey, CurrentKey);
 	bAwaitingNewKey = false;
+	if (Container->UINavPC->IsListeningToInputRebind())
+	{
+		Container->UINavPC->CancelRebind();
+	}
 }
 
 void UUINavInputBox::FinishUpdateNewEnhancedInputKey(const FKey& PressedKey)
@@ -218,6 +222,10 @@ void UUINavInputBox::CancelUpdateInputKey(const ERevertRebindReason Reason)
 	Container->OnRebindCancelled(Reason, AwaitingNewKey);
 	RevertToKeyText();
 	bAwaitingNewKey = false;
+	if (Container->UINavPC->IsListeningToInputRebind())
+	{
+		Container->UINavPC->CancelRebind();
+	}
 }
 
 void UUINavInputBox::ProcessInputName(const UInputAction* Action)
@@ -237,11 +245,6 @@ void UUINavInputBox::ProcessInputName(const UInputAction* Action)
 
 void UUINavInputBox::InputComponentClicked()
 {
-	if (Container->UINavPC->GetAndConsumeIgnoreSelectRelease())
-	{
-		return;
-	}
-
 	bAwaitingNewKey = true;
 
 	InputButton->SetText(Container->PressKeyText);
@@ -277,6 +280,12 @@ FNavigationReply UUINavInputBox::NativeOnNavigation(const FGeometry& MyGeometry,
 		return FNavigationReply::Explicit(TargetInputBox->InputButton->TakeWidget());
 	}
 	return Reply;
+}
+
+void UUINavInputBox::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
+{
+	Super::NativeOnMouseLeave(InMouseEvent);
+	Container->UINavPC->CancelRebind();
 }
 
 FText UUINavInputBox::GetKeyText()

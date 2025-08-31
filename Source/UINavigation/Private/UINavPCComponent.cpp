@@ -659,8 +659,9 @@ void UUINavPCComponent::CancelRebind()
 {
 	if (IsValid(ListeningInputBox) && IsValid(ActiveWidget) && !ActiveWidget->IsA<USwapKeysWidget>())
 	{
-		ListeningInputBox->CancelUpdateInputKey(ERevertRebindReason::None);
+		UUINavInputBox* InputBox = ListeningInputBox;
 		ListeningInputBox = nullptr;
+		InputBox->CancelUpdateInputKey(ERevertRebindReason::None);
 	}
 }
 
@@ -1152,51 +1153,11 @@ void UUINavPCComponent::HandleMouseMoveEvent(FSlateApplication& SlateApp, const 
 				NotifyInputTypeChange(EInputType::Mouse);
 			}
 		}
-
-		if (IsValid(ListeningInputBox))
-		{
-			FKey MouseKey = MouseEvent.GetEffectingButton();
-			const float MouseMoveThreshold = GetDefault<UUINavSettings>()->MouseMoveRebindThreshold;
-			const FVector2D MovementDelta = MouseEvent.GetCursorDelta();
-
-			if (MovementDelta.Y > MouseMoveThreshold) 
-			{
-				MouseKey = MouseDown;
-			}
-			else if (MovementDelta.Y < -MouseMoveThreshold)
-			{
-				MouseKey = MouseUp;
-			}
-			else if (MovementDelta.X > MouseMoveThreshold)
-			{
-				MouseKey = MouseRight;
-			}
-			else if (MovementDelta.X < -MouseMoveThreshold)
-			{
-				MouseKey = MouseLeft;
-			}
-			else
-			{
-				return;
-			}
-
-			if (MouseKey.IsValid())
-			{
-				const FKeyEvent MouseKeyEvent(MouseKey, FModifierKeysState(), MouseEvent.GetUserIndex(), MouseEvent.IsRepeat(), 0, 0);
-				ProcessRebind(MouseKeyEvent);
-			}
-		}
 	}
 }
 
 void UUINavPCComponent::HandleMouseButtonDownEvent(FSlateApplication& SlateApp, const FPointerEvent& MouseEvent)
 {
-	if (IsValid(ListeningInputBox))
-	{
-		const FKeyEvent MouseKeyEvent(MouseEvent.GetEffectingButton(), FModifierKeysState(), MouseEvent.GetUserIndex(), MouseEvent.IsRepeat(), 0, 0);
-		ProcessRebind(MouseKeyEvent);
-	}
-
 	if (CurrentInputType != EInputType::Mouse)
 	{
 		if (bIgnoreMousePress && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
@@ -1227,12 +1188,6 @@ void UUINavPCComponent::HandleMouseButtonUpEvent(FSlateApplication& SlateApp, co
 
 void UUINavPCComponent::HandleMouseWheelOrGestureEvent(FSlateApplication& SlateApp, const FPointerEvent& InWheelEvent, const FPointerEvent* InGesture)
 {
-	if (IsValid(ListeningInputBox))
-	{
-		const FKeyEvent MouseKeyEvent(InWheelEvent.GetWheelDelta() > 0.f ? EKeys::MouseScrollUp : EKeys::MouseScrollDown, FModifierKeysState(), InWheelEvent.GetUserIndex(), InWheelEvent.IsRepeat(), 0, 0);
-		ProcessRebind(MouseKeyEvent);
-	}
-
 	if (CurrentInputType != EInputType::Mouse && InWheelEvent.GetWheelDelta() != 0.0f)
 	{
 		NotifyInputTypeChange(EInputType::Mouse);

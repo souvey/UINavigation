@@ -917,12 +917,6 @@ void UUINavWidget::HandleOnKeyDown(FReply& Reply, UUINavWidget* Widget, UUINavCo
 		return;
 	}
 
-	if (IsValid(Component) && Widget->UINavPC->IsListeningToInputRebind())
-	{
-		Component->bIgnoreDueToRebind = true;
-		return;
-	}
-
 	const bool bHandleReply = Widget->OuterUINavWidget == nullptr;
 	if (FSlateApplication::Get().GetNavigationActionFromKey(InKeyEvent) == EUINavigationAction::Accept)
 	{
@@ -981,13 +975,6 @@ void UUINavWidget::HandleOnKeyUp(FReply& Reply, UUINavWidget* Widget, UUINavComp
 {
 	if (!IsValid(Widget) || !IsValid(Widget->UINavPC))
 	{
-		return;
-	}
-
-	if (IsValid(Component) && (Component->bIgnoreDueToRebind || Widget->UINavPC->IsListeningToInputRebind()))
-	{
-		Component->bIgnoreDueToRebind = false;
-		Widget->UINavPC->ProcessRebind(InKeyEvent);
 		return;
 	}
 

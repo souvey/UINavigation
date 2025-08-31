@@ -11,6 +11,11 @@ bool FUINavInputProcessor::HandleKeyDownEvent(FSlateApplication& SlateApp, const
 {
 	if (UINavPC != nullptr)
 	{
+		if (UINavPC->IsListeningToInputRebind())
+		{
+			UINavPC->ProcessRebind(InKeyEvent);
+			return true;
+		}
 		UINavPC->HandleKeyDownEvent(SlateApp, InKeyEvent);
 	}
 
@@ -51,6 +56,12 @@ bool FUINavInputProcessor::HandleMouseButtonDownEvent(FSlateApplication& SlateAp
 {
 	if (UINavPC != nullptr)
 	{
+		if (UINavPC->IsListeningToInputRebind())
+		{
+			const FKeyEvent MouseKeyEvent(MouseEvent.GetEffectingButton(), FModifierKeysState(), MouseEvent.GetUserIndex(), MouseEvent.IsRepeat(), 0, 0);
+			UINavPC->ProcessRebind(MouseKeyEvent);
+			return true;
+		}
 		UINavPC->HandleMouseButtonDownEvent(SlateApp, MouseEvent);
 	}
 
@@ -84,6 +95,12 @@ bool FUINavInputProcessor::HandleMouseWheelOrGestureEvent(FSlateApplication& Sla
 	}
 	if (UINavPC != nullptr)
 	{
+		if (UINavPC->IsListeningToInputRebind())
+		{
+			const FKeyEvent MouseKeyEvent(InWheelEvent.GetWheelDelta() > 0.f ? EKeys::MouseScrollUp : EKeys::MouseScrollDown, FModifierKeysState(), InWheelEvent.GetUserIndex(), InWheelEvent.IsRepeat(), 0, 0);
+			UINavPC->ProcessRebind(MouseKeyEvent);
+			return true;
+		}
 		UINavPC->HandleMouseWheelOrGestureEvent(SlateApp, InWheelEvent, InGesture);
 	}
 

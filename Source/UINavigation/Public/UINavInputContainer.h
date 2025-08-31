@@ -128,6 +128,9 @@ public:
 
 	FPromptWidgetDecided DecidedCallback;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UINav Input")
+	bool bAllowCollisions = false;
+
 	//The text used for empty key buttons
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UINav Input")
 	FText EmptyKeyText = FText::FromString(TEXT("Unbound"));

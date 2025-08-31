@@ -149,32 +149,12 @@ FReply UUINavComponent::NativeOnKeyUp(const FGeometry& InGeometry, const FKeyEve
 FReply UUINavComponent::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
 	FReply Reply = Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
-
-	if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton &&
-		IsValid(ParentWidget) &&
-		IsValid(ParentWidget->UINavPC) &&
-		ParentWidget->UINavPC->IsListeningToInputRebind())
-	{
-		const FKeyEvent MouseKeyEvent(EKeys::LeftMouseButton, FModifierKeysState(), InMouseEvent.GetUserIndex(), InMouseEvent.IsRepeat(), 0, 0);
-		ParentWidget->UINavPC->ProcessRebind(MouseKeyEvent);
-	}
-
 	return Reply;
 }
 
 FReply UUINavComponent::NativeOnMouseButtonDoubleClick(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
 	FReply Reply = Super::NativeOnMouseButtonDoubleClick(InGeometry, InMouseEvent);
-
-	if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton &&
-		IsValid(ParentWidget) &&
-		IsValid(ParentWidget->UINavPC) &&
-		ParentWidget->UINavPC->IsListeningToInputRebind())
-	{
-		const FKeyEvent MouseKeyEvent(EKeys::LeftMouseButton, FModifierKeysState(), InMouseEvent.GetUserIndex(), InMouseEvent.IsRepeat(), 0, 0);
-		ParentWidget->UINavPC->ProcessRebind(MouseKeyEvent);
-	}
-
 	return Reply;
 }
 
@@ -212,8 +192,6 @@ void UUINavComponent::OnButtonClicked()
 			return;
 		}
 	}
-	
-	const bool bWasListeningToRebind = ParentWidget->UINavPC->IsListeningToInputRebind();
 
 	OnNativeClicked.Broadcast();
 	OnClicked.Broadcast();
@@ -221,12 +199,6 @@ void UUINavComponent::OnButtonClicked()
 	ExecuteComponentActions(EComponentAction::OnClicked);
 
 	IUINavPCReceiver::Execute_OnSelect(ParentWidget->UINavPC->GetOwner());
-	
-	if (bWasListeningToRebind)
-	{
-		const FKeyEvent ReleasedKeyEvent(ParentWidget->UINavPC->LastReleasedKey, FModifierKeysState(), ParentWidget->UINavPC->LastReleasedKeyUserIndex, false, 0, 0);
-		ParentWidget->UINavPC->ProcessRebind(ReleasedKeyEvent);
-	}
 }
 
 void UUINavComponent::OnButtonPressed()
