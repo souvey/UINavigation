@@ -532,6 +532,9 @@ public:
 	FKey GetEnhancedInputKey(const UInputAction* Action, const EInputAxis Axis = EInputAxis::X, const EAxisType Scale = EAxisType::None, const EInputRestriction InputRestriction = EInputRestriction::None) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = UINavController)
+	FKey GetEnhancedInputMappableKey(FName PlayerMappableKeySettingsName) const;
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = UINavController)
 	UTexture2D* GetKeyIcon(const FKey Key) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = UINavController)

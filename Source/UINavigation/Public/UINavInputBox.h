@@ -28,14 +28,13 @@ class UINAVIGATION_API UUINavInputBox : public UUserWidget
 	
 protected:
 	FKey CurrentKey = FKey();
-	bool bUsingKeyImage;
+	bool bUsingKeyDisplay;
 
 	bool bAwaitingNewKey = false;
 	FKey AwaitingNewKey = FKey();
 
 	virtual FNavigationReply NativeOnNavigation(const FGeometry& MyGeometry, const FNavigationEvent& InNavigationEvent, const FNavigationReply& InDefaultReply) override;
 
-	bool UpdateKeyIconForKey();
 	FText GetKeyText();
 	void UpdateKeyDisplay();
 	void ProcessInputName(const UInputAction* Action);

@@ -45,6 +45,11 @@ public:
 	UPROPERTY(EditAnywhere, Category="InputDisplay")
 	EInputRestriction InputTypeRestriction = EInputRestriction::None;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="InputDisplay")
+	FName OverrideWithPlayerMappableKeySettingsName;
+	
+	FKey OverrideWithExactKey;
+
 public:
 
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget), Category = "InputDisplay")

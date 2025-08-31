@@ -1448,6 +1448,26 @@ FKey UUINavPCComponent::GetEnhancedInputKey(const UInputAction* Action, const EI
 	return FKey();
 }
 
+FKey UUINavPCComponent::GetEnhancedInputMappableKey(FName PlayerMappableKeySettingsName) const
+{
+	UEnhancedInputLocalPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetPC()->GetLocalPlayer());
+	if (!IsValid(PlayerSubsystem))
+	{
+		return FKey();
+	}
+	UEnhancedInputUserSettings* PlayerSettings = PlayerSubsystem->GetUserSettings();
+	if (!IsValid(PlayerSettings))
+	{
+		return FKey();
+	}
+	const FPlayerKeyMapping* KeyMapping = PlayerSettings->FindCurrentMappingForSlot(PlayerMappableKeySettingsName, EPlayerMappableKeySlot::First);
+	if (KeyMapping != nullptr && KeyMapping->GetCurrentKey().IsValid())
+	{
+		return KeyMapping->GetCurrentKey();
+	}
+	return FKey();
+}
+
 UTexture2D* UUINavPCComponent::GetKeyIcon(const FKey Key) const
 {
 	TSoftObjectPtr<UTexture2D> SoftKeyIcon = GetSoftKeyIcon(Key);

@@ -21,6 +21,7 @@
 #include "InputAction.h"
 #include "InputMappingContext.h"
 #include "PlayerMappableKeySettings.h"
+#include "UINavInputDisplay.h"
 #include "UserSettings/EnhancedInputUserSettings.h"
 
 UUINavInputBox::UUINavInputBox(const FObjectInitializer& ObjectInitializer)
@@ -69,7 +70,7 @@ void UUINavInputBox::CreateEnhancedInputKeyWidgets()
 	} else
 	{
 		InputButton->SetText(Container->EmptyKeyText);
-		InputButton->InputImage->SetVisibility(ESlateVisibility::Collapsed);
+		InputButton->InputDisplay->SetVisibility(ESlateVisibility::Collapsed);
 		if (IsValid(InputButton->NavText)) InputButton->NavText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		if (IsValid(InputButton->NavRichText)) InputButton->NavRichText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		CurrentKey = FKey();
@@ -81,13 +82,12 @@ bool UUINavInputBox::TrySetupNewKey(const FKey& NewKey)
 	if (!NewKey.IsValid()) return false;
 	CurrentKey = NewKey;
 	
-	if (UpdateKeyIconForKey())
-	{
-		bUsingKeyImage = true;
-		InputButton->InputImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		if (IsValid(InputButton->NavText)) InputButton->NavText->SetVisibility(ESlateVisibility::Collapsed);
-		if (IsValid(InputButton->NavRichText)) InputButton->NavRichText->SetVisibility(ESlateVisibility::Collapsed);
-	}
+	bUsingKeyDisplay = true;
+	InputButton->InputDisplay->OverrideWithExactKey = CurrentKey;
+	InputButton->InputDisplay->UpdateInputVisuals();
+	InputButton->InputDisplay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	if (IsValid(InputButton->NavText)) InputButton->NavText->SetVisibility(ESlateVisibility::Collapsed);
+	if (IsValid(InputButton->NavRichText)) InputButton->NavRichText->SetVisibility(ESlateVisibility::Collapsed);
 	InputButton->SetText(GetKeyText());
 
 	return true;
@@ -96,7 +96,7 @@ bool UUINavInputBox::TrySetupNewKey(const FKey& NewKey)
 void UUINavInputBox::ResetKeyWidgets()
 {
 	CurrentKey = FKey();
-	bUsingKeyImage = false;
+	bUsingKeyDisplay = false;
 	CreateKeyWidgets();
 }
 
@@ -246,9 +246,9 @@ void UUINavInputBox::InputComponentClicked()
 
 	InputButton->SetText(Container->PressKeyText);
 
-	if (bUsingKeyImage)
+	if (bUsingKeyDisplay)
 	{
-		InputButton->InputImage->SetVisibility(ESlateVisibility::Collapsed);
+		InputButton->InputDisplay->SetVisibility(ESlateVisibility::Collapsed);
 		
 		if (IsValid(InputButton->NavText)) InputButton->NavText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		if (IsValid(InputButton->NavRichText)) InputButton->NavRichText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -279,19 +279,6 @@ FNavigationReply UUINavInputBox::NativeOnNavigation(const FGeometry& MyGeometry,
 	return Reply;
 }
 
-bool UUINavInputBox::UpdateKeyIconForKey()
-{
-	TSoftObjectPtr<UTexture2D> NewSoftTexture = GetDefault<UUINavSettings>()->bLoadInputIconsAsync ?
-		Container->UINavPC->GetSoftKeyIcon(CurrentKey) :
-		Container->UINavPC->GetKeyIcon(CurrentKey);
-	if (!NewSoftTexture.IsNull())
-	{
-		InputButton->InputImage->SetBrushFromSoftTexture(NewSoftTexture);
-		return true;
-	}
-	return false;
-}
-
 FText UUINavInputBox::GetKeyText()
 {
 	const FKey Key = CurrentKey;
@@ -300,16 +287,18 @@ FText UUINavInputBox::GetKeyText()
 
 void UUINavInputBox::UpdateKeyDisplay()
 {
-	bUsingKeyImage = UpdateKeyIconForKey();
-	if (bUsingKeyImage)
+	InputButton->InputDisplay->OverrideWithExactKey = CurrentKey;
+	InputButton->InputDisplay->UpdateInputVisuals();
+	bUsingKeyDisplay = CurrentKey.IsValid();
+	if (bUsingKeyDisplay)
 	{
-		InputButton->InputImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		InputButton->InputDisplay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		if (IsValid(InputButton->NavText)) InputButton->NavText->SetVisibility(ESlateVisibility::Collapsed);
 		if (IsValid(InputButton->NavRichText)) InputButton->NavRichText->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	else
 	{
-		InputButton->InputImage->SetVisibility(ESlateVisibility::Collapsed);
+		InputButton->InputDisplay->SetVisibility(ESlateVisibility::Collapsed);
 		if (IsValid(InputButton->NavText)) InputButton->NavText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		if (IsValid(InputButton->NavRichText)) InputButton->NavRichText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}

@@ -2,6 +2,8 @@
 
 
 #include "UINavInputDisplay.h"
+
+#include "EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerController.h"
 #include "UINavPCComponent.h"
 #include "Engine/Texture2D.h"
@@ -30,10 +32,7 @@ void UUINavInputDisplay::NativeConstruct()
 		return;
 	}
 
-	if (InputTypeRestriction == EInputRestriction::None)
-	{
-		UINavPC->UpdateInputIconsDelegate.AddDynamic(this, &UUINavInputDisplay::UpdateInputVisuals);
-	}
+	UINavPC->UpdateInputIconsDelegate.AddDynamic(this, &UUINavInputDisplay::UpdateInputVisuals);
 	
 	UpdateInputVisuals();
 }
@@ -45,10 +44,7 @@ void UUINavInputDisplay::NativeDestruct()
 		return;
 	}
 
-	if (InputTypeRestriction == EInputRestriction::None)
-	{
-		UINavPC->UpdateInputIconsDelegate.RemoveDynamic(this, &UUINavInputDisplay::UpdateInputVisuals);
-	}
+	UINavPC->UpdateInputIconsDelegate.RemoveDynamic(this, &UUINavInputDisplay::UpdateInputVisuals);
 
 	Super::NativeDestruct();
 }
@@ -108,7 +104,13 @@ void UUINavInputDisplay::UpdateInputVisuals()
 	InputImage->SetVisibility(ESlateVisibility::Collapsed);
 
 	FKey Key;
-	if(InputTypeRestriction != EInputRestriction::None)
+	if (OverrideWithExactKey.IsValid())
+	{
+		Key = OverrideWithExactKey;
+	} else if (!OverrideWithPlayerMappableKeySettingsName.IsNone())
+	{
+		Key = UINavPC->GetEnhancedInputMappableKey(OverrideWithPlayerMappableKeySettingsName);
+	} else if (InputTypeRestriction != EInputRestriction::None)
 	{
 		Key = UINavPC->GetEnhancedInputKey(InputAction, Axis, Scale, InputTypeRestriction);
 	} else if (UINavPC->IsUsingGamepad())
