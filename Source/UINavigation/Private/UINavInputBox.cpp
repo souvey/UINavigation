@@ -288,6 +288,12 @@ void UUINavInputBox::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
 	Container->UINavPC->CancelRebind();
 }
 
+void UUINavInputBox::NativeOnFocusLost(const FFocusEvent& InFocusEvent)
+{
+	Super::NativeOnFocusLost(InFocusEvent);
+	Container->UINavPC->CancelRebind();
+}
+
 FText UUINavInputBox::GetKeyText()
 {
 	const FKey Key = CurrentKey;

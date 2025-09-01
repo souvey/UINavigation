@@ -78,6 +78,22 @@ bool FUINavInputProcessor::HandleMouseButtonUpEvent(FSlateApplication& SlateApp,
 	return IInputProcessor::HandleMouseButtonUpEvent(SlateApp, MouseEvent);
 }
 
+bool FUINavInputProcessor::HandleMouseButtonDoubleClickEvent(FSlateApplication& SlateApp, const FPointerEvent& MouseEvent)
+{
+	if (UINavPC != nullptr)
+	{
+		if (UINavPC->IsListeningToInputRebind())
+		{
+			const FKeyEvent MouseKeyEvent(MouseEvent.GetEffectingButton(), FModifierKeysState(), MouseEvent.GetUserIndex(), MouseEvent.IsRepeat(), 0, 0);
+			UINavPC->ProcessRebind(MouseKeyEvent);
+			return true;
+		}
+		UINavPC->HandleMouseButtonDownEvent(SlateApp, MouseEvent);
+	}
+
+	return IInputProcessor::HandleMouseButtonDoubleClickEvent(SlateApp, MouseEvent);
+}
+
 bool FUINavInputProcessor::HandleMouseWheelOrGestureEvent(FSlateApplication& SlateApp, const FPointerEvent& InWheelEvent, const FPointerEvent* InGesture)
 {
 	if (InGesture != nullptr)
