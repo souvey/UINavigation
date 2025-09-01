@@ -29,7 +29,7 @@ FUINavigationConfig::FUINavigationConfig(const UUINavPCComponent* const UINavPC,
 				continue;
 			}
 			FKey Key = UINavPC->GetCurrentKey(Mapping);
-			if (Pass == 1 && (KeyEventRules.Contains(Key) || Key == EKeys::LeftMouseButton)) {
+			if (Pass == 1 && (KeyEventRules.Contains(Key) || Key == EKeys::LeftMouseButton || Key == EKeys::RightMouseButton || Key == EKeys::MouseScrollDown || Key == EKeys::MouseScrollUp)) {
 				continue;
 			}
 			if (bAllowDirectionalInput)
