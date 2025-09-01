@@ -34,9 +34,27 @@ void UUINavInputBox::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	InputButton->OnClicked.RemoveAll(this);
-	InputButton->OnClicked.AddDynamic(this, &UUINavInputBox::InputComponentClicked);
+	UINavPC = Cast<APlayerController>(GetOwningPlayer())->FindComponentByClass<UUINavPCComponent>();
+	if (IsValid(UINavPC))
+	{
+		UINavPC->InputTypeChangedDelegate.AddUniqueDynamic(this, &UUINavInputBox::OnInputTypeChanged);
+	}
+
+	OnClicked.RemoveAll(this);
+	OnClicked.AddDynamic(this, &UUINavInputBox::InputComponentClicked);
+
+	CreateKeyWidgets();
 ;}
+
+void UUINavInputBox::NativeDestruct()
+{
+	Super::NativeDestruct();
+
+	if (IsValid(UINavPC))
+	{
+		UINavPC->InputTypeChangedDelegate.RemoveDynamic(this, &UUINavInputBox::OnInputTypeChanged);
+	}
+}
 
 void UUINavInputBox::CreateKeyWidgets()
 {
@@ -45,11 +63,11 @@ void UUINavInputBox::CreateKeyWidgets()
 
 void UUINavInputBox::CreateEnhancedInputKeyWidgets()
 {
-	if (!IsValid(Container) || !IsValid(Container->UINavPC) || !IsValid(Container->UINavPC->GetPC()) || !IsValid(Container->UINavPC->GetPC()->GetLocalPlayer()))
+	if (!IsValid(UINavPC) || !IsValid(UINavPC->GetPC()) || !IsValid(UINavPC->GetPC()->GetLocalPlayer()))
 	{
 		return;
 	}
-	UEnhancedInputLocalPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(Container->UINavPC->GetPC()->GetLocalPlayer());
+	UEnhancedInputLocalPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(UINavPC->GetPC()->GetLocalPlayer());
 	if (!IsValid(PlayerSubsystem))
 	{
 		return;
@@ -69,10 +87,10 @@ void UUINavInputBox::CreateEnhancedInputKeyWidgets()
 		TrySetupNewKey(KeyMapping->GetCurrentKey());
 	} else
 	{
-		InputButton->SetText(Container->EmptyKeyText);
-		InputButton->InputDisplay->SetVisibility(ESlateVisibility::Collapsed);
-		if (IsValid(InputButton->NavText)) InputButton->NavText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		if (IsValid(InputButton->NavRichText)) InputButton->NavRichText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		SetText(EmptyKeyText);
+		InputDisplay->SetVisibility(ESlateVisibility::Collapsed);
+		if (IsValid(NavText)) NavText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		if (IsValid(NavRichText)) NavRichText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		CurrentKey = FKey();
 	}
 }
@@ -83,14 +101,19 @@ bool UUINavInputBox::TrySetupNewKey(const FKey& NewKey)
 	CurrentKey = NewKey;
 	
 	bUsingKeyDisplay = true;
-	InputButton->InputDisplay->OverrideWithExactKey = CurrentKey;
-	InputButton->InputDisplay->UpdateInputVisuals();
-	InputButton->InputDisplay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-	if (IsValid(InputButton->NavText)) InputButton->NavText->SetVisibility(ESlateVisibility::Collapsed);
-	if (IsValid(InputButton->NavRichText)) InputButton->NavRichText->SetVisibility(ESlateVisibility::Collapsed);
-	InputButton->SetText(GetKeyText());
+	InputDisplay->OverrideWithExactKey = CurrentKey;
+	InputDisplay->UpdateInputVisuals();
+	InputDisplay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	if (IsValid(NavText)) NavText->SetVisibility(ESlateVisibility::Collapsed);
+	if (IsValid(NavRichText)) NavRichText->SetVisibility(ESlateVisibility::Collapsed);
+	SetText(GetKeyText());
 
 	return true;
+}
+
+void UUINavInputBox::OnInputTypeChanged(EInputType InputType)
+{
+	ResetKeyWidgets();
 }
 
 void UUINavInputBox::ResetKeyWidgets()
@@ -107,33 +130,8 @@ void UUINavInputBox::UpdateInputKey(const FKey& NewKey, const bool bSkipChecks)
 	if (!bSkipChecks)
 	{
 		int CollidingActionIndex = INDEX_NONE;
-		const ERevertRebindReason RevertReason = Container->CanRegisterKey(this, NewKey, CollidingActionIndex);
-		if (RevertReason == ERevertRebindReason::UsedBySameInputGroup)
-		{
-			if (!CurrentKey.IsValid())
-			{
-				CancelUpdateInputKey(RevertReason);
-				return;
-			}
-
-			int SelfIndex = INDEX_NONE;
-
-			FInputRebindData CollidingInputData;
-			Container->GetEnhancedInputRebindData(CollidingActionIndex, CollidingInputData);
-			if (!Container->InputBoxes.Find(this, SelfIndex) ||
-				!Container->RequestKeySwap(FInputCollisionData(GetCurrentText(),
-					CollidingInputData.InputText,
-					CurrentKey,
-					NewKey),
-					SelfIndex,
-					CollidingActionIndex))
-			{
-				CancelUpdateInputKey(RevertReason);
-			}
-
-			return;
-		}
-		else if (RevertReason != ERevertRebindReason::None)
+		const ERevertRebindReason RevertReason = CanRegisterKey(this, NewKey, CollidingActionIndex);
+		if (RevertReason != ERevertRebindReason::None)
 		{
 			CancelUpdateInputKey(RevertReason);
 			return;
@@ -147,22 +145,22 @@ void UUINavInputBox::FinishUpdateNewKey()
 {
 	const FKey OldKey = CurrentKey;
 	FinishUpdateNewEnhancedInputKey(AwaitingNewKey);
-	Container->OnKeyRebinded(InputName, OldKey, CurrentKey);
+	OnKeyRebinded(InputName, OldKey, CurrentKey);
 	bAwaitingNewKey = false;
-	if (Container->UINavPC->IsListeningToInputRebind())
+	if (UINavPC->IsListeningToInputRebind())
 	{
-		Container->UINavPC->CancelRebind();
+		UINavPC->CancelRebind();
 	}
 }
 
 void UUINavInputBox::FinishUpdateNewEnhancedInputKey(const FKey& PressedKey)
 {
 
-	if (!IsValid(Container) || !IsValid(Container->UINavPC) || !IsValid(Container->UINavPC->GetPC()) || !IsValid(Container->UINavPC->GetPC()->GetLocalPlayer()))
+	if (!IsValid(UINavPC) || !IsValid(UINavPC->GetPC()) || !IsValid(UINavPC->GetPC()->GetLocalPlayer()))
 	{
 		return;
 	}
-	UEnhancedInputLocalPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(Container->UINavPC->GetPC()->GetLocalPlayer());
+	UEnhancedInputLocalPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(UINavPC->GetPC()->GetLocalPlayer());
 	if (!IsValid(PlayerSubsystem))
 	{
 		return;
@@ -205,10 +203,10 @@ void UUINavInputBox::FinishUpdateNewEnhancedInputKey(const FKey& PressedKey)
 	PlayerSettings->ApplySettings();
 	PlayerSettings->AsyncSaveSettings();
 
-	Container->UINavPC->RequestRebuildMappings();
+	UINavPC->RequestRebuildMappings();
 
 	CurrentKey = PressedKey;
-	InputButton->SetText(GetKeyText());
+	SetText(GetKeyText());
 	UpdateKeyDisplay();
 }
 
@@ -219,12 +217,12 @@ void UUINavInputBox::CancelUpdateInputKey(const ERevertRebindReason Reason)
 		return;
 	}
 
-	Container->OnRebindCancelled(Reason, AwaitingNewKey);
+	OnRebindCancelled(Reason, AwaitingNewKey);
 	RevertToKeyText();
 	bAwaitingNewKey = false;
-	if (Container->UINavPC->IsListeningToInputRebind())
+	if (UINavPC->IsListeningToInputRebind())
 	{
-		Container->UINavPC->CancelRebind();
+		UINavPC->CancelRebind();
 	}
 }
 
@@ -247,75 +245,59 @@ void UUINavInputBox::InputComponentClicked()
 {
 	bAwaitingNewKey = true;
 
-	InputButton->SetText(Container->PressKeyText);
+	SetText(PressKeyText);
 
 	if (bUsingKeyDisplay)
 	{
-		InputButton->InputDisplay->SetVisibility(ESlateVisibility::Collapsed);
+		InputDisplay->SetVisibility(ESlateVisibility::Collapsed);
 		
-		if (IsValid(InputButton->NavText)) InputButton->NavText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		if (IsValid(InputButton->NavRichText)) InputButton->NavRichText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		if (IsValid(NavText)) NavText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		if (IsValid(NavRichText)) NavRichText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 
-	Container->UINavPC->ListenToInputRebind(this);
-}
-
-FNavigationReply UUINavInputBox::NativeOnNavigation(const FGeometry& MyGeometry, const FNavigationEvent& InNavigationEvent, const FNavigationReply& InDefaultReply)
-{
-	FNavigationReply Reply = Super::NativeOnNavigation(MyGeometry, InNavigationEvent, InDefaultReply);
-
-	if (!IsValid(Container))
-	{
-		return Reply;
-	}
-
-	UUINavInputBox* TargetInputBox = Container->GetInputBoxInDirection(this, InNavigationEvent.GetNavigationType());
-	if (!IsValid(TargetInputBox))
-	{
-		return Reply;
-	}
-
-	if (InputButton->ForcedStylePair.Key == EButtonStyle::Hovered)
-	{
-		return FNavigationReply::Explicit(TargetInputBox->InputButton->TakeWidget());
-	}
-	return Reply;
+	UINavPC->ListenToInputRebind(this);
 }
 
 void UUINavInputBox::NativeOnMouseLeave(const FPointerEvent& InMouseEvent)
 {
 	Super::NativeOnMouseLeave(InMouseEvent);
-	Container->UINavPC->CancelRebind();
+	if (IsValid(UINavPC))
+	{
+		UINavPC->CancelRebind();	
+	}
 }
 
 void UUINavInputBox::NativeOnFocusLost(const FFocusEvent& InFocusEvent)
 {
 	Super::NativeOnFocusLost(InFocusEvent);
-	Container->UINavPC->CancelRebind();
+	if (IsValid(UINavPC))
+	{
+		UINavPC->CancelRebind();	
+	}
 }
 
 FText UUINavInputBox::GetKeyText()
 {
 	const FKey Key = CurrentKey;
-	return Container->UINavPC->GetKeyText(Key);
+	return UINavPC->GetKeyText(Key);
 }
 
 void UUINavInputBox::UpdateKeyDisplay()
 {
-	InputButton->InputDisplay->OverrideWithExactKey = CurrentKey;
-	InputButton->InputDisplay->UpdateInputVisuals();
+	InputDisplay->OverrideWithExactKey = CurrentKey;
+	InputDisplay->UpdateInputVisuals();
 	bUsingKeyDisplay = CurrentKey.IsValid();
 	if (bUsingKeyDisplay)
 	{
-		InputButton->InputDisplay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		if (IsValid(InputButton->NavText)) InputButton->NavText->SetVisibility(ESlateVisibility::Collapsed);
-		if (IsValid(InputButton->NavRichText)) InputButton->NavRichText->SetVisibility(ESlateVisibility::Collapsed);
+		InputDisplay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		if (IsValid(NavText)) NavText->SetVisibility(ESlateVisibility::Collapsed);
+		if (IsValid(NavRichText)) NavRichText->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	else
 	{
-		InputButton->InputDisplay->SetVisibility(ESlateVisibility::Collapsed);
-		if (IsValid(InputButton->NavText)) InputButton->NavText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		if (IsValid(InputButton->NavRichText)) InputButton->NavRichText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		InputDisplay->SetVisibility(ESlateVisibility::Collapsed);
+		if (IsValid(NavText)) NavText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		if (IsValid(NavRichText)) NavRichText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 }
 
@@ -329,10 +311,21 @@ void UUINavInputBox::RevertToKeyText()
 	}
 	else
 	{
-		OldName = Container->EmptyKeyText;
+		OldName = EmptyKeyText;
 	}
 
-	InputButton->SetText(OldName);
+	SetText(OldName);
+}
+
+ERevertRebindReason UUINavInputBox::CanRegisterKey(class UUINavInputBox* InputBox, const FKey NewKey, int& OutCollidingActionIndex)
+{
+	if (!NewKey.IsValid()) return ERevertRebindReason::BlacklistedKey;
+	if (KeyWhitelist.Num() > 0 && !KeyWhitelist.Contains(NewKey)) return ERevertRebindReason::NonWhitelistedKey;
+	if (KeyBlacklist.Contains(NewKey)) return ERevertRebindReason::BlacklistedKey;
+	if (!UUINavBlueprintFunctionLibrary::RespectsRestriction(NewKey, InputBox->InputRestriction)) return ERevertRebindReason::RestrictionMismatch;
+	if (InputBox->ContainsKey(NewKey)) return ERevertRebindReason::UsedBySameInput;
+
+	return ERevertRebindReason::None;
 }
 
 FText UUINavInputBox::GetCurrentText() const

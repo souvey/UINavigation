@@ -14,7 +14,4 @@ class UINAVIGATION_API UUINavInputComponent : public UUINavComponent
 	GENERATED_BODY()
 
 public:
-
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget), Category = "UINav Input")
-	class UUINavInputDisplay* InputDisplay = nullptr;
 };

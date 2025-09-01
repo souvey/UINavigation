@@ -61,7 +61,6 @@ void UUINavInputContainer::NativeConstruct()
 	{
 		if (UUINavInputBox* InputBox = Cast<UUINavInputBox>(Widget))
 		{
-			InputBox->Container = this;
 			InputBox->CreateKeyWidgets();
 			this->InputBoxes.Add(InputBox);
 		}
@@ -86,7 +85,7 @@ FReply UUINavInputContainer::NativeOnFocusReceived(const FGeometry& InGeometry, 
 
 	if (InputBoxes.Num() > 0)
 	{
-		InputBoxes[0]->InputButton->SetFocus();
+		InputBoxes[0]->SetFocus();
 	}
 
 	return Reply;
