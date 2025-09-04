@@ -56,6 +56,7 @@ bool FUINavInputProcessor::HandleMouseButtonDownEvent(FSlateApplication& SlateAp
 {
 	if (UINavPC != nullptr)
 	{
+		EInputType InputType = UINavPC->CurrentInputType;
 		if (UINavPC->IsListeningToInputRebind())
 		{
 			const FKeyEvent MouseKeyEvent(MouseEvent.GetEffectingButton(), FModifierKeysState(), MouseEvent.GetUserIndex(), MouseEvent.IsRepeat(), 0, 0);
@@ -63,6 +64,10 @@ bool FUINavInputProcessor::HandleMouseButtonDownEvent(FSlateApplication& SlateAp
 			return true;
 		}
 		UINavPC->HandleMouseButtonDownEvent(SlateApp, MouseEvent);
+		if (InputType != UINavPC->CurrentInputType && UINavPC->GetActiveWidget())
+		{
+			return true;
+		}
 	}
 
 	return IInputProcessor::HandleMouseButtonDownEvent(SlateApp, MouseEvent);
@@ -72,7 +77,12 @@ bool FUINavInputProcessor::HandleMouseButtonUpEvent(FSlateApplication& SlateApp,
 {
 	if (UINavPC != nullptr)
 	{
+		EInputType InputType = UINavPC->CurrentInputType;
 		UINavPC->HandleMouseButtonUpEvent(SlateApp, MouseEvent);
+		if (InputType != UINavPC->CurrentInputType && UINavPC->GetActiveWidget())
+		{
+			return true;
+		}
 	}
 
 	return IInputProcessor::HandleMouseButtonUpEvent(SlateApp, MouseEvent);
@@ -82,6 +92,7 @@ bool FUINavInputProcessor::HandleMouseButtonDoubleClickEvent(FSlateApplication& 
 {
 	if (UINavPC != nullptr)
 	{
+		EInputType InputType = UINavPC->CurrentInputType;
 		if (UINavPC->IsListeningToInputRebind())
 		{
 			const FKeyEvent MouseKeyEvent(MouseEvent.GetEffectingButton(), FModifierKeysState(), MouseEvent.GetUserIndex(), MouseEvent.IsRepeat(), 0, 0);
@@ -89,6 +100,10 @@ bool FUINavInputProcessor::HandleMouseButtonDoubleClickEvent(FSlateApplication& 
 			return true;
 		}
 		UINavPC->HandleMouseButtonDownEvent(SlateApp, MouseEvent);
+		if (InputType != UINavPC->CurrentInputType && UINavPC->GetActiveWidget())
+		{
+			return true;
+		}
 	}
 
 	return IInputProcessor::HandleMouseButtonDoubleClickEvent(SlateApp, MouseEvent);
