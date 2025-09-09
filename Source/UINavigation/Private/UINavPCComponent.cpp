@@ -337,7 +337,7 @@ void UUINavPCComponent::AddInputContextForMenu(const TObjectPtr<UInputMappingCon
 	}
 	else
 	{
-		AddInputContext(Context);
+		AddInputContext(Context, 100);
 		AddedInputContexts.Add(Context, 1);
 	}
 }
