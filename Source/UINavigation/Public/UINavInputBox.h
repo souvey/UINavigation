@@ -51,6 +51,9 @@ public:
 
 	UUINavInputBox(const FObjectInitializer& ObjectInitializer);
 
+	UFUNCTION(BlueprintCallable)
+	void ResetToDefault();
+	
 	UFUNCTION()
 	void OnInputTypeChanged(EInputType InputType);
 	virtual void NativeConstruct() override;

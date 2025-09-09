@@ -153,6 +153,39 @@ void UUINavInputBox::FinishUpdateNewKey()
 	}
 }
 
+void UUINavInputBox::ResetToDefault()
+{
+	if (!IsValid(UINavPC) || !IsValid(UINavPC->GetPC()) || !IsValid(UINavPC->GetPC()->GetLocalPlayer()))
+	{
+		return;
+	}
+	UEnhancedInputLocalPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(UINavPC->GetPC()->GetLocalPlayer());
+	if (!IsValid(PlayerSubsystem))
+	{
+		return;
+	}
+	UEnhancedInputUserSettings* PlayerSettings = PlayerSubsystem->GetUserSettings();
+	if (!IsValid(PlayerSettings))
+	{
+		return;
+	}
+	UEnhancedPlayerMappableKeyProfile* KeyProfile = PlayerSettings->GetActiveKeyProfile();
+	if (!IsValid(KeyProfile))
+	{
+		return;
+	}
+	FMapPlayerKeyArgs Args = {};
+	Args.MappingName = PlayerMappableKeySettingsName;
+	Args.Slot = EPlayerMappableKeySlot::First;
+	FPlayerKeyMapping* FoundMapping = KeyProfile->FindKeyMapping(Args);
+	if (!FoundMapping)
+	{
+		return;
+	}
+	FinishUpdateNewEnhancedInputKey(FoundMapping->GetDefaultKey());
+}
+
+
 void UUINavInputBox::FinishUpdateNewEnhancedInputKey(const FKey& PressedKey)
 {
 
@@ -206,8 +239,18 @@ void UUINavInputBox::FinishUpdateNewEnhancedInputKey(const FKey& PressedKey)
 	UINavPC->RequestRebuildMappings();
 
 	CurrentKey = PressedKey;
-	SetText(GetKeyText());
-	UpdateKeyDisplay();
+	if (PressedKey.IsValid())
+	{
+		SetText(GetKeyText());
+		UpdateKeyDisplay();	
+	} else
+	{
+		SetText(EmptyKeyText);
+		InputDisplay->SetVisibility(ESlateVisibility::Collapsed);
+		if (IsValid(NavText)) NavText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		if (IsValid(NavRichText)) NavRichText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		CurrentKey = FKey();
+	}
 }
 
 void UUINavInputBox::CancelUpdateInputKey(const ERevertRebindReason Reason)

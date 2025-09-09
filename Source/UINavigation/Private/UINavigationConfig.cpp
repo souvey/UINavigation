@@ -21,6 +21,7 @@ FUINavigationConfig::FUINavigationConfig(const UUINavPCComponent* const UINavPC,
 		return;
 	}
 
+	TSet<FKey> ReservedKeys;
 	for (int Pass = 0; Pass < 2; ++Pass) {
 		for (const FEnhancedActionKeyMapping& Mapping : InputContext->GetMappings())
 		{
@@ -29,9 +30,10 @@ FUINavigationConfig::FUINavigationConfig(const UUINavPCComponent* const UINavPC,
 				continue;
 			}
 			FKey Key = UINavPC->GetCurrentKey(Mapping);
-			if (Pass == 1 && (KeyEventRules.Contains(Key) || Key == EKeys::LeftMouseButton || Key == EKeys::RightMouseButton || Key == EKeys::MouseScrollDown || Key == EKeys::MouseScrollUp)) {
+			if (Pass == 1 && (ReservedKeys.Contains(Key) || Key == EKeys::LeftMouseButton || Key == EKeys::RightMouseButton || Key == EKeys::MouseScrollDown || Key == EKeys::MouseScrollUp)) {
 				continue;
 			}
+			ReservedKeys.Add(Key);
 			if (bAllowDirectionalInput)
 			{
 				if (Mapping.Action == InputActions->IA_MenuUp)
