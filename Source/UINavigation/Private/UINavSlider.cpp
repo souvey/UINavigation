@@ -309,7 +309,7 @@ void UUINavSlider::UpdateTextFromPercent(const float Percent, const bool bUpdate
 	}
 	if (!bUseComma) NewValueText = FText::FromString(NewValueText.ToString().Replace(TEXT(","), TEXT(".")));
 	
-	SetText(NewValueText);
+	SetText(FText::Format(TextFormatWrapper, NewValueText));
 
 	if (NavSpinBox != nullptr && bUpdateSpinBox)
 	{

@@ -91,6 +91,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = UINavSlider)
 	bool bUpdateWhileDragging = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = UINavSlider)
+	FText TextFormatWrapper = FText::FromString("{0}");
 	
 	float Difference = 0.0f;
 
