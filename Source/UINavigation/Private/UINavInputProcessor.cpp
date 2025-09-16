@@ -64,7 +64,7 @@ bool FUINavInputProcessor::HandleMouseButtonDownEvent(FSlateApplication& SlateAp
 			return true;
 		}
 		UINavPC->HandleMouseButtonDownEvent(SlateApp, MouseEvent);
-		if (InputType != UINavPC->CurrentInputType && UINavPC->GetActiveWidget())
+		if (InputType != UINavPC->CurrentInputType && UINavPC->GetActiveWidget() && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
 		{
 			return true;
 		}
@@ -79,7 +79,7 @@ bool FUINavInputProcessor::HandleMouseButtonUpEvent(FSlateApplication& SlateApp,
 	{
 		EInputType InputType = UINavPC->CurrentInputType;
 		UINavPC->HandleMouseButtonUpEvent(SlateApp, MouseEvent);
-		if (InputType != UINavPC->CurrentInputType && UINavPC->GetActiveWidget())
+		if (InputType != UINavPC->CurrentInputType && UINavPC->GetActiveWidget() && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
 		{
 			return true;
 		}
@@ -100,7 +100,7 @@ bool FUINavInputProcessor::HandleMouseButtonDoubleClickEvent(FSlateApplication& 
 			return true;
 		}
 		UINavPC->HandleMouseButtonDownEvent(SlateApp, MouseEvent);
-		if (InputType != UINavPC->CurrentInputType && UINavPC->GetActiveWidget())
+		if (InputType != UINavPC->CurrentInputType && UINavPC->GetActiveWidget() && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
 		{
 			return true;
 		}
