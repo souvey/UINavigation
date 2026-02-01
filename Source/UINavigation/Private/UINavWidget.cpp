@@ -923,8 +923,10 @@ void UUINavWidget::HandleOnKeyDown(FReply& Reply, UUINavWidget* Widget, UUINavCo
 		Widget->OnRawNavigationAction(EUINavigationAction::Accept);
 		if (!Widget->TryConsumeNavigation(false))
 		{
+			Widget->SetSelectedComponent(Component);
 			Widget->StartedSelect();
 			Widget->StoppedSelect();
+			Widget->SetSelectedComponent(nullptr);
 			if (UUINavComponent* Current = Widget->CurrentComponent)
 			{
 				if (UUINavButtonBase* NavButton = Cast<UUINavButtonBase>(Current->NavButton))
